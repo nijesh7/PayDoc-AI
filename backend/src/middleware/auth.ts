@@ -1,11 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
 import { supabaseAdmin } from '../config/supabase';
+import { UserRole, UserStatus, normalizeRole } from '../types/auth';
 
 export interface AuthenticatedUser {
   id: string;
   email: string;
   organization_id: string;
-  role: 'admin' | 'hr' | 'accountant' | 'employee';
+  role: UserRole;
+  status: UserStatus;
   full_name: string;
 }
 
@@ -34,7 +36,8 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
         email: 'admin@acmetech.com',
         full_name: 'Admin User',
         organization_id: req.organizationId,
-        role: 'admin',
+        role: 'ADMIN',
+        status: 'active',
       };
       return next();
     }
@@ -46,7 +49,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
       return res.status(401).json({ error: 'Invalid or expired session token' });
     }
 
-    // Fetch user profile from database to get role and organization_id
+    // Fetch user profile from database to get role, status and organization_id
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('users')
       .select('*')
@@ -61,12 +64,26 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
         email: user.email || 'user@paydoc.ai',
         full_name: user.user_metadata?.full_name || 'Organization Member',
         organization_id: req.organizationId,
-        role: (user.user_metadata?.role as any) || 'admin',
+        role: normalizeRole(user.user_metadata?.role as any),
+        status: (user.user_metadata?.status as any) || 'active',
       };
       return next();
     }
 
-    req.user = profile as AuthenticatedUser;
+    const userStatus = (profile.status || (profile.is_active === false ? 'disabled' : 'active')) as UserStatus;
+
+    if (userStatus === 'disabled') {
+      return res.status(403).json({ error: 'Your account has been disabled. Please contact your administrator.' });
+    }
+
+    req.user = {
+      id: profile.id,
+      email: profile.email,
+      full_name: profile.full_name,
+      organization_id: profile.organization_id,
+      role: normalizeRole(profile.role),
+      status: userStatus,
+    };
     req.organizationId = profile.organization_id;
     next();
   } catch (err) {
