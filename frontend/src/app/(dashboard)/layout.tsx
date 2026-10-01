@@ -17,10 +17,24 @@ export default function DashboardLayout({
   const [roleNotice, setRoleNotice] = useState<string | null>(null);
 
   useEffect(() => {
-    // Get stored role
-    const activeRole = normalizeRole(localStorage.getItem('paydoc_active_role') || 'ADMIN');
-    const roleDef = ROLE_DEFINITIONS[activeRole];
+    let activeRole = normalizeRole(localStorage.getItem('paydoc_active_role') || 'ADMIN');
 
+    // If on a dedicated role dashboard route, ensure active role is synced
+    if (pathname?.startsWith('/admin')) {
+      activeRole = 'ADMIN';
+      localStorage.setItem('paydoc_active_role', 'ADMIN');
+    } else if (pathname?.startsWith('/hr')) {
+      activeRole = 'HR';
+      localStorage.setItem('paydoc_active_role', 'HR');
+    } else if (pathname?.startsWith('/accountant')) {
+      activeRole = 'ACCOUNTANT';
+      localStorage.setItem('paydoc_active_role', 'ACCOUNTANT');
+    } else if (pathname?.startsWith('/employee')) {
+      activeRole = 'EMPLOYEE';
+      localStorage.setItem('paydoc_active_role', 'EMPLOYEE');
+    }
+
+    const roleDef = ROLE_DEFINITIONS[activeRole];
     if (!pathname) return;
 
     // Check if current route is unauthorized for this role
@@ -44,7 +58,7 @@ export default function DashboardLayout({
     }
 
     if (isUnauthorized) {
-      setRoleNotice(`Access Denied: Role '${activeRole}' does not have permission to access ${pathname}. Redirecting to your dashboard...`);
+      setRoleNotice(`Access Restricted: Role '${activeRole}' does not have permission to access ${pathname}. Redirecting to your dashboard...`);
       const timer = setTimeout(() => {
         router.push(roleDef.defaultRoute);
         setRoleNotice(null);
@@ -54,7 +68,7 @@ export default function DashboardLayout({
   }, [pathname, router]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0B0F19] text-gray-100">
+    <div className="flex h-screen overflow-hidden bg-slate-50 dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 transition-colors duration-200">
       {/* Fixed Sidebar */}
       <Sidebar />
 
@@ -63,9 +77,9 @@ export default function DashboardLayout({
         <Header />
 
         {roleNotice && (
-          <div className="bg-red-950/80 border-b border-red-800/80 px-6 py-3 flex items-center space-x-3 text-red-300 text-xs animate-fadeIn">
-            <ShieldAlert className="w-4 h-4 text-red-400 shrink-0" />
-            <span className="font-medium">{roleNotice}</span>
+          <div className="bg-rose-50 dark:bg-rose-950/80 border-b border-rose-200 dark:border-rose-800/80 px-6 py-3 flex items-center space-x-3 text-rose-700 dark:text-rose-300 text-xs animate-fadeIn">
+            <ShieldAlert className="w-4 h-4 text-rose-500 shrink-0" />
+            <span className="font-semibold">{roleNotice}</span>
           </div>
         )}
 

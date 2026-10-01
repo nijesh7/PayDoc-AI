@@ -16,22 +16,20 @@ export class UserController {
 
       const normalizedSelected = normalizeRole(selectedRole);
 
-      // Get user from token
-      let userId = req.user?.id;
-      let userEmail = req.user?.email;
+      // Require a valid session token
+      const authToken = token || req.headers.authorization?.replace('Bearer ', '');
 
-      if (token) {
-        const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-        if (error || !user) {
-          return res.status(401).json({ error: 'Invalid or expired session token.' });
-        }
-        userId = user.id;
-        userEmail = user.email;
+      if (!authToken) {
+        return res.status(401).json({ error: 'Authentication required. No session token provided.' });
       }
 
-      if (!userId) {
-        return res.status(401).json({ error: 'Authentication required.' });
+      const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(authToken);
+      if (authErr || !user) {
+        return res.status(401).json({ error: 'Invalid or expired credentials. Please log in again.' });
       }
+
+      const userId = user.id;
+      const userEmail = user.email || '';
 
       // Fetch user profile from database
       const { data: profile, error: profileError } = await supabaseAdmin
@@ -41,18 +39,28 @@ export class UserController {
         .single();
 
       if (profileError || !profile) {
-        // Fallback for newly created auth user before profile sync
+        // Fallback: check role in auth metadata if profile hasn't synced yet
+        const metaRole = normalizeRole(user.user_metadata?.role);
+        if (metaRole && metaRole !== normalizedSelected) {
+          return res.status(400).json({
+            error: 'Role Mismatch',
+            storedRole: metaRole,
+            selectedRole: normalizedSelected,
+            message: `This account is registered as ${metaRole}. Please select ${metaRole} to continue.`,
+          });
+        }
+
         return res.json({
           success: true,
           user: {
             id: userId,
             email: userEmail,
-            role: normalizedSelected,
+            role: metaRole || normalizedSelected,
             status: 'active',
-            full_name: req.user?.full_name || 'Organization Member',
-            organization_id: req.user?.organization_id || '00000000-0000-0000-0000-000000000001',
+            full_name: user.user_metadata?.full_name || 'Organization Member',
+            organization_id: '00000000-0000-0000-0000-000000000001',
           },
-          redirectUrl: `/${normalizedSelected.toLowerCase()}/dashboard`,
+          redirectUrl: `/${(metaRole || normalizedSelected).toLowerCase()}/dashboard`,
         });
       }
 
@@ -110,14 +118,24 @@ export class UserController {
     try {
       const {
         id,
+        authUserId,
         email,
         full_name,
+        fullName,
         role,
         organization_name,
+        organizationName,
         organization_code,
+        organizationCode,
       } = req.body;
 
-      if (!id || !email || !full_name || !role) {
+      const targetUserId = id || authUserId;
+      const targetEmail = email;
+      const targetFullName = full_name || fullName;
+      const targetOrgName = organization_name || organizationName;
+      const targetOrgCode = organization_code || organizationCode;
+
+      if (!targetUserId || !targetEmail || !targetFullName || !role) {
         return res.status(400).json({ error: 'Missing required profile fields.' });
       }
 
@@ -125,16 +143,16 @@ export class UserController {
       let targetOrgId = '00000000-0000-0000-0000-000000000001'; // Default Acme Tech
       let initialStatus = 'active';
 
-      if (normalizedRole === 'ADMIN' && organization_name) {
+      if (normalizedRole === 'ADMIN' && targetOrgName) {
         // Create new organization for the Admin
-        const slug = organization_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + Math.floor(1000 + Math.random() * 9000);
+        const slug = targetOrgName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') + '-' + Math.floor(1000 + Math.random() * 9000);
         const { data: newOrg, error: orgError } = await supabaseAdmin
           .from('organizations')
           .insert({
-            name: organization_name,
+            name: targetOrgName,
             slug,
             currency: 'INR',
-            contact_email: email,
+            contact_email: targetEmail,
             invitation_code: slug.toUpperCase().slice(0, 8),
           })
           .select()
@@ -145,12 +163,12 @@ export class UserController {
         } else if (newOrg) {
           targetOrgId = newOrg.id;
         }
-      } else if (organization_code) {
+      } else if (targetOrgCode) {
         // Find organization by invitation code or slug
         const { data: existingOrg } = await supabaseAdmin
           .from('organizations')
           .select('id, invitation_code')
-          .or(`invitation_code.ilike.%${organization_code}%,slug.ilike.%${organization_code}%`)
+          .or(`invitation_code.ilike.%${targetOrgCode}%,slug.ilike.%${targetOrgCode}%`)
           .limit(1)
           .single();
 
@@ -172,12 +190,11 @@ export class UserController {
       const { data: userProfile, error: userError } = await supabaseAdmin
         .from('users')
         .upsert({
-          id,
+          id: targetUserId,
           organization_id: targetOrgId,
-          email,
-          full_name,
+          email: targetEmail,
+          full_name: targetFullName,
           role: normalizedRole.toLowerCase(),
-          status: initialStatus,
           is_active: initialStatus === 'active',
           updated_at: new Date().toISOString(),
         })
@@ -192,11 +209,11 @@ export class UserController {
       // Audit log entry
       await supabaseAdmin.from('audit_logs').insert({
         organization_id: targetOrgId,
-        user_id: id,
+        user_id: targetUserId,
         action: 'USER_REGISTERED',
         entity_type: 'users',
-        entity_id: id,
-        new_state: { email, full_name, role: normalizedRole, status: initialStatus },
+        entity_id: targetUserId,
+        new_state: { email: targetEmail, full_name: targetFullName, role: normalizedRole, status: initialStatus },
       });
 
       return res.status(201).json({
@@ -329,7 +346,6 @@ export class UserController {
       const { data: updatedUser, error } = await supabaseAdmin
         .from('users')
         .update({
-          status,
           is_active: status === 'active',
           updated_at: new Date().toISOString(),
         })

@@ -8,8 +8,13 @@
     --foreground: #0f172a;
     --card: #ffffff;
     --card-foreground: #0f172a;
+    --card-border: #e2e8f0;
+    --sidebar-bg: #ffffff;
+    --sidebar-border: #e2e8f0;
+    --sidebar-text: #334155;
     --border: #e2e8f0;
     --primary: #4f46e5;
+    --primary-hover: #4338ca;
     --primary-foreground: #ffffff;
     --success: #16a34a;
     --warning: #d97706;
@@ -17,16 +22,25 @@
   }
 
   .dark {
-    --background: #0f172a;
-    --foreground: #f8fafc;
-    --card: #1e293b;
+    --background: #0b0f19;
+    --foreground: #f1f5f9;
+    --card: #111827;
     --card-foreground: #f8fafc;
-    --border: #334155;
+    --card-border: #1e293b;
+    --sidebar-bg: #0d121f;
+    --sidebar-border: #1e293b;
+    --sidebar-text: #94a3b8;
+    --border: #1e293b;
     --primary: #6366f1;
+    --primary-hover: #4f46e5;
     --primary-foreground: #ffffff;
     --success: #22c55e;
     --warning: #f59e0b;
     --danger: #ef4444;
+  }
+
+  html {
+    color-scheme: light dark;
   }
 
   body {
@@ -34,10 +48,12 @@
     color: var(--foreground);
     font-feature-settings: "rlig" 1, "calt" 1, "tnum" 1;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
 
-/* Custom scrollbar */
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -50,5 +66,50 @@
   border-radius: 9999px;
 }
 .dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
   background: #475569;
+}
+
+/* Glassmorphism & Modern Card Classes */
+.glass-panel {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+.dark .glass-panel {
+  background: rgba(17, 24, 39, 0.75);
+  border: 1px solid rgba(30, 41, 59, 0.8);
+}
+
+.glass-header {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+}
+.dark .glass-header {
+  background: rgba(13, 18, 31, 0.85);
+  border-bottom: 1px solid rgba(30, 41, 59, 0.8);
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

@@ -22,15 +22,15 @@ export function RoleSelector({
   const getRoleIcon = (iconName: string) => {
     switch (iconName) {
       case 'ShieldCheck':
-        return <ShieldCheck className="w-5 h-5 text-indigo-400" />;
+        return <ShieldCheck className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />;
       case 'Users':
-        return <Users className="w-5 h-5 text-blue-400" />;
+        return <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />;
       case 'BadgeDollarSign':
-        return <BadgeDollarSign className="w-5 h-5 text-emerald-400" />;
+        return <BadgeDollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />;
       case 'User':
-        return <User className="w-5 h-5 text-purple-400" />;
+        return <User className="w-5 h-5 text-purple-600 dark:text-purple-400" />;
       default:
-        return <User className="w-5 h-5 text-gray-400" />;
+        return <User className="w-5 h-5 text-slate-400" />;
     }
   };
 
@@ -61,10 +61,10 @@ export function RoleSelector({
                 relative flex flex-col p-3.5 rounded-xl border text-left transition-all duration-200 cursor-pointer select-none outline-none
                 ${
                   disabled
-                    ? 'opacity-50 cursor-not-allowed border-gray-800 bg-gray-900/40'
+                    ? 'opacity-50 cursor-not-allowed border-slate-200 dark:border-gray-800 bg-slate-100/50 dark:bg-gray-900/40'
                     : isSelected
-                    ? 'border-indigo-500/80 bg-gradient-to-br from-indigo-950/40 to-slate-900/80 shadow-lg shadow-indigo-500/10 ring-2 ring-indigo-500/30'
-                    : 'border-gray-800/80 bg-gray-900/40 hover:border-gray-700 hover:bg-gray-800/40 focus-visible:ring-2 focus-visible:ring-indigo-500'
+                    ? 'border-indigo-600 dark:border-indigo-500/80 bg-indigo-50/70 dark:bg-gradient-to-br dark:from-indigo-950/40 dark:to-slate-900/80 shadow-md shadow-indigo-600/10 ring-2 ring-indigo-500/30'
+                    : 'border-slate-200 dark:border-gray-800/80 bg-white dark:bg-gray-900/40 hover:border-slate-300 dark:hover:border-gray-700 hover:bg-slate-50 dark:hover:bg-gray-800/40 focus-visible:ring-2 focus-visible:ring-indigo-500'
                 }
               `}
             >
@@ -73,27 +73,27 @@ export function RoleSelector({
                   <div
                     className={`p-1.5 rounded-lg border ${
                       isSelected
-                        ? 'bg-indigo-500/20 border-indigo-500/40'
-                        : 'bg-gray-800/70 border-gray-700/60'
+                        ? 'bg-indigo-100 dark:bg-indigo-500/20 border-indigo-200 dark:border-indigo-500/40'
+                        : 'bg-slate-100 dark:bg-gray-800/70 border-slate-200 dark:border-gray-700/60'
                     }`}
                   >
                     {getRoleIcon(role.iconName)}
                   </div>
                   <div>
-                    <span className="text-sm font-semibold tracking-wide text-white">
+                    <span className="text-sm font-semibold tracking-wide text-slate-900 dark:text-white">
                       {role.title}
                     </span>
                   </div>
                 </div>
 
                 {isSelected ? (
-                  <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <CheckCircle2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
                 ) : (
-                  <div className="w-4 h-4 rounded-full border border-gray-700 shrink-0" />
+                  <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-gray-700 shrink-0" />
                 )}
               </div>
 
-              <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-gray-400 line-clamp-2 leading-relaxed">
                 {role.description}
               </p>
             </div>
