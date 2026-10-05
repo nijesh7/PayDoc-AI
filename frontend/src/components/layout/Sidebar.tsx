@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   Sliders,
   CalendarDays,
+  Percent,
   LogOut,
   Building2,
   ChevronRight,
@@ -92,6 +93,7 @@ export function Sidebar() {
       case 'ACCOUNTANT':
         return [
           { label: 'Finance Dashboard', href: '/accountant/dashboard', icon: LayoutDashboard },
+          { label: 'Tax & Compliance', href: '/tax', icon: Percent },
           { label: 'Approvals Hub', href: '/approvals', icon: ShieldCheck },
           { label: 'Invoices', href: '/invoices', icon: Receipt },
           { label: 'Payments Ledger', href: '/payments', icon: CreditCard },
@@ -107,6 +109,7 @@ export function Sidebar() {
           { label: 'Staff Directory', href: '/employees', icon: Users },
           { label: 'Leave & Attendance', href: '/attendance', icon: CalendarDays },
           { label: 'Salary Components', href: '/settings/salary-components', icon: Sliders },
+          { label: 'Tax & Compliance', href: '/tax', icon: Percent },
           { label: 'Approvals Hub', href: '/approvals', icon: ShieldCheck },
           { label: 'Payroll Preparation', href: '/payroll', icon: FileSpreadsheet },
           { label: 'Payments Overview', href: '/payments', icon: CreditCard },
@@ -125,6 +128,7 @@ export function Sidebar() {
           { label: 'Employees', href: '/employees', icon: Users },
           { label: 'Leave & Attendance', href: '/attendance', icon: CalendarDays },
           { label: 'Salary Components', href: '/settings/salary-components', icon: Sliders },
+          { label: 'Tax & Compliance', href: '/tax', icon: Percent },
           { label: 'Payroll & Payslips', href: '/payroll', icon: FileSpreadsheet },
           { label: 'Payments Ledger', href: '/payments', icon: CreditCard },
           { label: 'Documents & AI', href: '/documents', icon: FileText, badge: 'AI' },

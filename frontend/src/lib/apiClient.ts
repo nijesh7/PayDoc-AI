@@ -98,9 +98,14 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     throw new Error(errorData.error || `API request failed with status ${res.status}`);
   }
 
-  // If content is PDF or blob
-  const contentType = res.headers.get('content-type');
-  if (contentType && contentType.includes('application/pdf')) {
+  // If content is PDF, text/plain, CSV, or raw blob
+  const contentType = res.headers.get('content-type') || '';
+  if (
+    contentType.includes('application/pdf') ||
+    contentType.includes('text/plain') ||
+    contentType.includes('text/csv') ||
+    contentType.includes('application/octet-stream')
+  ) {
     return res.blob();
   }
 

@@ -7,7 +7,7 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "node -r ts-node/register src/tests/phase1.test.ts && node -r ts-node/register src/tests/phase2.test.ts"
+    "test": "node -r ts-node/register src/tests/phase1.test.ts && node -r ts-node/register src/tests/phase2.test.ts && node -r ts-node/register src/tests/phase3.test.ts && node -r ts-node/register src/tests/phase4.test.ts && node -r ts-node/register src/tests/phase5.test.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",

@@ -2,7 +2,15 @@ import { Request, Response } from 'express';
 import { supabaseAdmin } from '../../config/supabase';
 import { calculateNetSalary } from '../../services/payroll/calculator';
 import { generatePayslipPDF } from '../../services/pdf/payslipGenerator';
+import { generateEPFOECRText, ECRMemberInput } from '../../services/banking/epfoEcrGenerator';
 import { approvalService } from '../../services/approvals/approvalService';
+import {
+  calculateEPF,
+  calculateESI,
+  calculateProfessionalTax,
+  calculateNewRegimeTax,
+  calculateOldRegimeTax,
+} from '../../services/tax/indianTaxCalculator';
 
 export async function listPayrollRuns(req: Request, res: Response) {
   try {
@@ -117,6 +125,27 @@ export async function createPayrollRun(req: Request, res: Response) {
       attendanceByEmployee.set(rec.employee_id, list);
     }
 
+    // 2c. Fetch statutory details and tax declarations for statutory tax calculations
+    const { data: statutoryList } = await supabaseAdmin
+      .from('employee_statutory_details')
+      .select('*')
+      .eq('organization_id', orgId);
+
+    const { data: declarationsList } = await supabaseAdmin
+      .from('employee_tax_declarations')
+      .select('*')
+      .eq('organization_id', orgId);
+
+    const statutoryByEmployee = new Map<string, any>();
+    for (const s of statutoryList || []) {
+      statutoryByEmployee.set(s.employee_id, s);
+    }
+
+    const declarationByEmployee = new Map<string, any>();
+    for (const d of declarationsList || []) {
+      declarationByEmployee.set(d.employee_id, d);
+    }
+
     const payrollItemsToInsert = [];
 
     // 3. Deterministic calculation for each employee
@@ -164,6 +193,64 @@ export async function createPayrollRun(req: Request, res: Response) {
         deductions,
       });
 
+      // Statutory calculations (PF, ESI, PT, TDS)
+      const statDetails = statutoryByEmployee.get(emp.id);
+      const decl = declarationByEmployee.get(emp.id);
+
+      // EPF
+      let pfEmployee = 0;
+      let pfEmployer = 0;
+      if (statDetails?.is_pf_eligible !== false) {
+        const epf = calculateEPF(
+          emp.basic_salary,
+          statDetails?.pf_wage_ceiling_applicable ?? true,
+          statDetails?.vpf_percentage ?? 0
+        );
+        pfEmployee = Number(epf.employeePF);
+        pfEmployer = Number(epf.totalEmployerPF);
+      }
+
+      // ESI
+      let esiEmployee = 0;
+      let esiEmployer = 0;
+      if (statDetails?.is_esi_eligible) {
+        const esi = calculateESI(calc.grossSalary);
+        esiEmployee = Number(esi.employeeESI);
+        esiEmployer = Number(esi.employerESI);
+      }
+
+      // Professional Tax (PT)
+      const ptAmount = Number(
+        calculateProfessionalTax(calc.grossSalary, statDetails?.pt_state || 'Karnataka', month)
+      );
+
+      // Monthly TDS based on elected tax regime
+      let tdsAmount = 0;
+      if (decl) {
+        const grossAnnual = calc.grossSalary * 12;
+        if (decl.regime === 'old') {
+          const annualBasic = Number(emp.basic_salary) * 12;
+          const annualHRA = calc.allowancesAmount * 0.4 * 12;
+          const oldTax = calculateOldRegimeTax(grossAnnual, annualBasic, annualHRA, {
+            sec80C: Number(decl.sec_80c) || 0,
+            sec80D_self: Number(decl.sec_80d_self) || 0,
+            sec80D_parents: Number(decl.sec_80d_parents) || 0,
+            sec80CCD_nps: Number(decl.sec_80ccd_nps) || 0,
+            sec24b_homeLoanInterest: Number(decl.sec_24b_home_loan_interest) || 0,
+            annualRentPaid: Number(decl.hra_annual_rent_paid) || 0,
+            isMetroCity: decl.is_metro_city,
+            otherExemptions: Number(decl.other_exemptions) || 0,
+          });
+          tdsAmount = Number(oldTax.monthlyTDS);
+        } else {
+          const newTax = calculateNewRegimeTax(grossAnnual);
+          tdsAmount = Number(newTax.monthlyTDS);
+        }
+      }
+
+      // Net salary considering statutory deductions if not already included in custom deductions
+      const netSalary = Math.max(0, calc.netSalary - tdsAmount);
+
       payrollItemsToInsert.push({
         payroll_run_id: run.id,
         organization_id: orgId,
@@ -177,12 +264,27 @@ export async function createPayrollRun(req: Request, res: Response) {
         advances_amount: 0,
         lop_days: lopDays,
         leave_deductions_amount: calc.leaveDeductionsAmount,
-        net_salary: calc.netSalary,
+        tds_amount: tdsAmount,
+        pf_employee: pfEmployee,
+        pf_employer: pfEmployer,
+        esi_employee: esiEmployee,
+        esi_employer: esiEmployer,
+        pt_amount: ptAmount,
+        net_salary: netSalary,
         status: 'draft',
         breakdown: {
           ...calc.breakdown,
           lopDays,
           attendanceRecordsCount: empRecords.length,
+          statutory: {
+            pfEmployee,
+            pfEmployer,
+            esiEmployee,
+            esiEmployer,
+            ptAmount,
+            tdsAmount,
+            regime: decl?.regime || 'new',
+          },
         },
       });
     }
@@ -390,8 +492,13 @@ export async function downloadPayslipPDF(req: Request, res: Response) {
       bankAccount: item.employees.bank_account_number || 'N/A',
       bankIfsc: item.employees.bank_ifsc || 'N/A',
       panNumber: item.employees.pan_number,
+      uan: item.employees.uan,
+      pfNumber: item.employees.pf_number,
       month: item.payroll_runs.month,
       year: item.payroll_runs.year,
+      totalWorkingDays: item.payroll_runs?.total_working_days || 30,
+      daysWorked: (item.payroll_runs?.total_working_days || 30) - Number(item.lop_days || 0),
+      lopDays: Number(item.lop_days || 0),
       basicSalary: Number(item.basic_salary),
       overtimeHours: Number(item.overtime_hours),
       overtimeAmount: Number(item.overtime_amount),
@@ -400,6 +507,10 @@ export async function downloadPayslipPDF(req: Request, res: Response) {
       deductionsAmount: Number(item.deductions_amount),
       advancesAmount: Number(item.advances_amount),
       leaveDeductionsAmount: Number(item.leave_deductions_amount),
+      pfEmployee: Number(item.pf_employee || 0),
+      esiEmployee: Number(item.esi_employee || 0),
+      ptAmount: Number(item.pt_amount || 0),
+      tdsAmount: Number(item.tds_amount || 0),
       netSalary: Number(item.net_salary),
       paymentStatus: item.status,
       allowancesBreakdown: item.breakdown?.allowances,
@@ -411,6 +522,66 @@ export async function downloadPayslipPDF(req: Request, res: Response) {
     res.send(pdfBuffer);
   } catch (err: any) {
     console.error('downloadPayslipPDF error:', err);
+    res.status(500).json({ error: err.message });
+  }
+}
+
+export async function downloadEPFOECRFile(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const orgId = req.organizationId;
+
+    const { data: run, error: runError } = await supabaseAdmin
+      .from('payroll_runs')
+      .select('*')
+      .eq('id', id)
+      .eq('organization_id', orgId)
+      .single();
+
+    if (runError || !run) {
+      return res.status(404).json({ error: 'Payroll run not found' });
+    }
+
+    const { data: items, error: itemsError } = await supabaseAdmin
+      .from('payroll_items')
+      .select('*, employees(*)')
+      .eq('payroll_run_id', id)
+      .eq('organization_id', orgId);
+
+    if (itemsError || !items || items.length === 0) {
+      return res.status(400).json({ error: 'No payroll items found for this run' });
+    }
+
+    // Fetch statutory details to check wage ceiling
+    const empIds = items.map((i: any) => i.employee_id);
+    const { data: statList } = await supabaseAdmin
+      .from('employee_statutory_details')
+      .select('*')
+      .eq('organization_id', orgId)
+      .in('employee_id', empIds);
+
+    const statMap = new Map((statList || []).map((s: any) => [s.employee_id, s]));
+
+    const members: ECRMemberInput[] = items.map((i: any) => {
+      const stat = statMap.get(i.employee_id);
+      const gross = Number(i.basic_salary) + Number(i.allowances_amount || 0) + Number(i.overtime_amount || 0) + Number(i.bonus_amount || 0);
+      return {
+        uan: stat?.uan || i.employees?.uan || i.employees?.employee_id || '100000000000',
+        memberName: `${i.employees?.first_name || ''} ${i.employees?.last_name || ''}`.trim() || 'Employee',
+        grossWages: gross,
+        basicSalary: Number(i.basic_salary),
+        pfWageCeilingApplicable: stat?.pf_wage_ceiling_applicable ?? true,
+        ncpDays: Math.round(Number(i.lop_days || 0)),
+      };
+    });
+
+    const ecrResult = generateEPFOECRText(members, run.month, run.year);
+
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${ecrResult.fileName}"`);
+    res.send(ecrResult.content);
+  } catch (err: any) {
+    console.error('downloadEPFOECRFile error:', err);
     res.status(500).json({ error: err.message });
   }
 }

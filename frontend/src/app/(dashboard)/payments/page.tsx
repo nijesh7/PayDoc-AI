@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   CreditCard,
   CheckCircle2,
@@ -11,6 +12,7 @@ import {
   ArrowUpRight,
   X,
   FileCheck2,
+  Building2,
 } from 'lucide-react';
 import { fetchApi } from '../../../lib/apiClient';
 import { formatCurrency, formatDate, getStatusBadge } from '../../../lib/utils';
@@ -83,9 +85,19 @@ export default function PaymentsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Payment Ledger & Disbursements</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Track employee salary payouts, vendor liabilities, and settlement references.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Payment Ledger & Disbursements</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Track employee salary payouts, vendor liabilities, and settlement references.</p>
+        </div>
+
+        <Link
+          href="/payments/payouts"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs hover:shadow transition-all shrink-0"
+        >
+          <Building2 className="w-4 h-4" />
+          <span>Banking Payouts & UTR Hub</span>
+        </Link>
       </div>
 
       {/* Summary Cards */}

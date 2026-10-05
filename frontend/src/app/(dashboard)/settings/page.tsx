@@ -352,8 +352,10 @@ export default function SettingsPage() {
                 <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
                   <td className="py-3 px-4 font-mono text-slate-500 dark:text-slate-400">{formatDate(log.created_at)}</td>
                   <td className="py-3 px-4 font-semibold text-indigo-600 dark:text-indigo-400">{log.action}</td>
-                  <td className="py-3 px-4 text-slate-700 dark:text-slate-300">{log.entity_type}</td>
-                  <td className="py-3 px-4 text-slate-500 dark:text-slate-400">{JSON.stringify(log.details)}</td>
+                  <td className="py-3 px-4 text-slate-700 dark:text-slate-300 font-medium">{log.entity_type}</td>
+                  <td className="py-3 px-4 font-mono text-[11px] text-slate-500 dark:text-slate-400 max-w-xs truncate" title={JSON.stringify(log.new_values || log.details || {})}>
+                    {JSON.stringify(log.new_values || log.details || {})}
+                  </td>
                 </tr>
               ))}
             </tbody>

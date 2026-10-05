@@ -17,6 +17,8 @@ import * as salaryCompCtrl from './modules/salaryComponents/salaryComponentContr
 import * as approvalCtrl from './modules/approvals/approvalController';
 import * as leaveCtrl from './modules/leave/leaveController';
 import * as attendanceCtrl from './modules/attendance/attendanceController';
+import * as taxCtrl from './modules/tax/taxController';
+import * as bankingCtrl from './modules/banking/bankingController';
 import { userController } from './modules/users/userController';
 
 const upload = multer({
@@ -56,6 +58,7 @@ apiRouter.post('/payroll/runs', requireRole(['ADMIN', 'HR']), payrollCtrl.create
 apiRouter.put('/payroll/items/:id', requireRole(['ADMIN', 'HR']), payrollCtrl.updatePayrollItem);
 apiRouter.post('/payroll/runs/:id/approve', requireRole(['ADMIN']), payrollCtrl.approvePayrollRun);
 apiRouter.get('/payslips/:itemId/pdf', payrollCtrl.downloadPayslipPDF);
+apiRouter.get('/payroll/runs/:id/ecr', payrollCtrl.downloadEPFOECRFile);
 
 // --- 4. Payments ---
 apiRouter.get('/payments', paymentCtrl.listPayments);
@@ -84,8 +87,11 @@ apiRouter.get('/reminders', notificationCtrl.listReminders);
 
 // --- 9. Organization & Settings ---
 apiRouter.get('/organization', organizationCtrl.getOrganizationSettings);
+apiRouter.get('/organization/settings', organizationCtrl.getOrganizationSettings);
 apiRouter.put('/organization', requireRole(['ADMIN']), organizationCtrl.updateOrganizationProfile);
+apiRouter.put('/organization/profile', requireRole(['ADMIN']), organizationCtrl.updateOrganizationProfile);
 apiRouter.post('/departments', requireRole(['ADMIN', 'HR']), organizationCtrl.createDepartment);
+apiRouter.post('/organization/departments', requireRole(['ADMIN', 'HR']), organizationCtrl.createDepartment);
 
 // --- 10. Global Search ---
 apiRouter.get('/search', searchCtrl.globalSearch);
@@ -122,3 +128,21 @@ apiRouter.get('/attendance', attendanceCtrl.getAttendance);
 apiRouter.post('/attendance', requireRole(['ADMIN', 'HR']), attendanceCtrl.recordAttendance);
 apiRouter.post('/attendance/bulk', requireRole(['ADMIN', 'HR']), attendanceCtrl.bulkRecordAttendance);
 apiRouter.get('/attendance/summary/:employeeId', attendanceCtrl.getEmployeeAttendanceSummary);
+
+// --- 14. Indian Statutory Tax & Compliance (TDS, PF, ESI, PT) ---
+apiRouter.get('/tax/regime-comparison', taxCtrl.simulateTaxRegimes);
+apiRouter.get('/tax/declarations/:employeeId', taxCtrl.getEmployeeTaxDeclaration);
+apiRouter.post('/tax/declarations', taxCtrl.saveEmployeeTaxDeclaration);
+apiRouter.patch('/tax/declarations/:id/verify', requireRole(['ADMIN', 'HR', 'ACCOUNTANT']), taxCtrl.verifyTaxDeclaration);
+apiRouter.get('/tax/statutory-details/:employeeId', taxCtrl.getEmployeeStatutoryDetails);
+apiRouter.post('/tax/statutory-details', requireRole(['ADMIN', 'HR']), taxCtrl.saveEmployeeStatutoryDetails);
+apiRouter.get('/tax/pt-slabs', taxCtrl.getPtStateSlabs);
+apiRouter.get('/tax/form16/:employeeId/pdf', taxCtrl.downloadForm16PDF);
+
+// --- 15. Banking & Payout Engine (HDFC, ICICI, SBI, NEFT, UTR) ---
+apiRouter.get('/banking/accounts', bankingCtrl.listBankAccounts);
+apiRouter.post('/banking/accounts', requireRole(['ADMIN', 'ACCOUNTANT']), bankingCtrl.createBankAccount);
+apiRouter.get('/banking/batches', bankingCtrl.listPayoutBatches);
+apiRouter.post('/banking/batches', requireRole(['ADMIN', 'HR', 'ACCOUNTANT']), bankingCtrl.generatePayoutBatch);
+apiRouter.get('/banking/batches/:id', bankingCtrl.getPayoutBatch);
+apiRouter.post('/banking/batches/:id/reconcile', requireRole(['ADMIN', 'ACCOUNTANT']), bankingCtrl.reconcilePayoutBatch);

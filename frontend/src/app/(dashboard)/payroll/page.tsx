@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   X,
   AlertCircle,
+  FileDown,
 } from 'lucide-react';
 import { fetchApi } from '../../../lib/apiClient';
 import { formatCurrency, formatDate, getStatusBadge } from '../../../lib/utils';
@@ -53,6 +54,22 @@ export default function PayrollPage() {
       alert(err.message || 'Failed to create payroll run');
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleDownloadECR = async (e: React.MouseEvent, runId: string, runMonth: number, runYear: number) => {
+    e.stopPropagation();
+    try {
+      const blob = await fetchApi(`/payroll/runs/${runId}/ecr`);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `EPFO_ECR_${runMonth}_${runYear}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err: any) {
+      alert(`Error downloading EPFO ECR: ${err.message}`);
     }
   };
 
@@ -120,13 +137,26 @@ export default function PayrollPage() {
                     </span>
                   </td>
                   <td className="py-3.5 px-4 text-right">
-                    <Link
-                      href={`/payroll/${run.id}`}
-                      className="inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50"
-                    >
-                      <span>Review & Adjust</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
+                    <div className="flex items-center justify-end gap-2">
+                      {(run.status === 'approved' || run.status === 'paid') && (
+                        <button
+                          type="button"
+                          onClick={(e) => handleDownloadECR(e, run.id, run.month, run.year)}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition"
+                          title="Download EPFO ECR (.txt) File"
+                        >
+                          <FileDown className="w-3.5 h-3.5 text-indigo-500" />
+                          <span>ECR</span>
+                        </button>
+                      )}
+                      <Link
+                        href={`/payroll/${run.id}`}
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-950/50 dark:hover:bg-indigo-900/50"
+                      >
+                        <span>Review & Adjust</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
                   </td>
                 </tr>
               ))

@@ -13,6 +13,7 @@ import {
   FileSpreadsheet,
   AlertCircle,
   Plus,
+  FileDown,
 } from 'lucide-react';
 import { fetchApi } from '../../../../lib/apiClient';
 import { formatCurrency, getStatusBadge } from '../../../../lib/utils';
@@ -100,6 +101,26 @@ export default function PayrollRunDetailPage() {
     }
   };
 
+  const [downloadingECR, setDownloadingECR] = useState(false);
+
+  const downloadECR = async () => {
+    try {
+      setDownloadingECR(true);
+      const blob = await fetchApi(`/payroll/runs/${id}/ecr`);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `EPFO_ECR_${data.payrollRun.month}_${data.payrollRun.year}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch (err: any) {
+      alert(`Error downloading EPFO ECR file: ${err.message}`);
+    } finally {
+      setDownloadingECR(false);
+    }
+  };
+
   if (loading) {
     return <div className="py-16 text-center text-xs text-slate-400">Loading payroll calculations...</div>;
   }
@@ -145,9 +166,20 @@ export default function PayrollRunDetailPage() {
         )}
 
         {isApproved && (
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold">
-            <Lock className="w-3.5 h-3.5 text-slate-400" />
-            <span>Run Approved & Locked</span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={downloadECR}
+              disabled={downloadingECR}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-xs font-semibold transition disabled:opacity-50"
+              title="Download official Electronic Challan cum Return file for EPFO portal upload"
+            >
+              <FileDown className="w-3.5 h-3.5" />
+              <span>{downloadingECR ? 'Downloading ECR...' : 'Download EPFO ECR'}</span>
+            </button>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold">
+              <Lock className="w-3.5 h-3.5 text-slate-400" />
+              <span>Run Approved & Locked</span>
+            </div>
           </div>
         )}
       </div>
