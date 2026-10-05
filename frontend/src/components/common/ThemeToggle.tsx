@@ -43,6 +43,7 @@ export function ThemeToggle({ showMenu = true, className = '' }: ThemeToggleProp
         } ${className}`}
         title={`Switch to ${resolvedTheme === 'dark' ? 'Light' : 'Dark'} mode`}
         aria-label="Toggle Theme"
+        suppressHydrationWarning
       >
         {resolvedTheme === 'dark' ? (
           <Sun className="w-4 h-4 transition-transform duration-300 rotate-0 hover:rotate-45" />
@@ -64,6 +65,7 @@ export function ThemeToggle({ showMenu = true, className = '' }: ThemeToggleProp
         } shadow-xs`}
         title="Theme Settings"
         aria-label="Theme settings"
+        suppressHydrationWarning
       >
         {resolvedTheme === 'dark' ? (
           <Sun className="w-4 h-4 transition-transform duration-300" />

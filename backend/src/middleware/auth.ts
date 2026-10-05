@@ -25,28 +25,41 @@ const DEFAULT_ORG_ID = '00000000-0000-0000-0000-000000000001';
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   try {
+    // 1. Bypass authentication for CORS preflight OPTIONS requests
+    if (req.method === 'OPTIONS') {
+      return next();
+    }
+
     const authHeader = req.headers.authorization;
     const orgHeader = req.headers['x-organization-id'] as string;
+    const roleHeader = req.headers['x-user-role'] as string;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      // Default to demo admin session for local development if no auth header provided
+    const token = authHeader && authHeader.startsWith('Bearer ')
+      ? authHeader.split(' ')[1]?.trim()
+      : null;
+
+    if (!token || token === 'undefined' || token === 'null' || token === '') {
+      // Default to demo session for local development if no auth token provided
       req.organizationId = orgHeader || DEFAULT_ORG_ID;
       req.user = {
         id: '00000000-0000-0000-0000-000000000001',
         email: 'admin@acmetech.com',
         full_name: 'Admin User',
         organization_id: req.organizationId,
-        role: 'ADMIN',
+        role: roleHeader ? normalizeRole(roleHeader) : 'ADMIN',
         status: 'active',
       };
       return next();
     }
 
-    const token = authHeader.split(' ')[1];
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
 
     if (error || !user) {
-      return res.status(401).json({ error: 'Invalid or expired session token' });
+      console.warn(`[authMiddleware] Supabase auth.getUser failed: ${error?.message || 'User null'}`);
+      return res.status(401).json({
+        error: 'Invalid or expired session token',
+        code: 'TOKEN_EXPIRED',
+      });
     }
 
     // Fetch user profile from database to get role, status and organization_id

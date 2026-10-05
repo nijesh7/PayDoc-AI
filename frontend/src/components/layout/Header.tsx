@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Search, Bell, Sparkles, User, LogOut, CheckCircle2, AlertCircle } from 'lucide-react';
 import { GlobalSearchModal } from './GlobalSearchModal';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
@@ -9,27 +10,35 @@ import { supabase } from '@/lib/supabaseClient';
 import { UserRole, normalizeRole } from '@/types/auth';
 
 export function Header() {
+  const pathname = usePathname();
   const [searchOpen, setSearchOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [currentRole, setCurrentRole] = useState<UserRole>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('paydoc_active_role');
-      if (saved) return normalizeRole(saved);
-      const path = window.location.pathname;
-      if (path.startsWith('/admin')) return 'ADMIN';
-      if (path.startsWith('/hr')) return 'HR';
-      if (path.startsWith('/accountant')) return 'ACCOUNTANT';
-      if (path.startsWith('/employee')) return 'EMPLOYEE';
-    }
-    return 'ADMIN';
-  });
+  const [mounted, setMounted] = useState(false);
+
+  // Compute deterministic initial role matching the URL path on both server and client
+  const roleFromPath = pathname?.startsWith('/admin')
+    ? 'ADMIN'
+    : pathname?.startsWith('/hr')
+    ? 'HR'
+    : pathname?.startsWith('/accountant')
+    ? 'ACCOUNTANT'
+    : pathname?.startsWith('/employee')
+    ? 'EMPLOYEE'
+    : 'ADMIN';
+
+  const [currentRole, setCurrentRole] = useState<UserRole>(roleFromPath);
   const [userName, setUserName] = useState<string>('');
   const notificationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    setMounted(true);
     const saved = localStorage.getItem('paydoc_active_role');
     const name = localStorage.getItem('paydoc_user_name');
-    if (saved) setCurrentRole(normalizeRole(saved));
+    if (saved) {
+      setCurrentRole(normalizeRole(saved));
+    } else {
+      setCurrentRole(roleFromPath);
+    }
     if (name) setUserName(name);
 
     // Keyboard shortcut for Command+K or Ctrl+K
@@ -139,17 +148,18 @@ export function Header() {
 
           {/* User Profile Avatar & Sign Out */}
           <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
-            <div className="hidden sm:flex flex-col items-end text-right">
-              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[120px]">
+            <div className="hidden sm:flex flex-col items-end text-right" suppressHydrationWarning>
+              <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[120px]" suppressHydrationWarning>
                 {userName || (currentRole === 'ADMIN' ? 'Rajesh Sharma' : currentRole === 'HR' ? 'Ananya D.' : currentRole === 'ACCOUNTANT' ? 'Vikram Mehta' : 'Aarav Sharma')}
               </span>
-              <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400">
+              <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400" suppressHydrationWarning>
                 {currentRole}
               </span>
             </div>
             <div
               className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white font-bold flex items-center justify-center text-xs shadow-2xs cursor-default"
               title={`Logged in as ${currentRole}`}
+              suppressHydrationWarning
             >
               {currentRole.substring(0, 2)}
             </div>

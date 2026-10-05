@@ -14,6 +14,7 @@ import {
   Download,
   FileText,
   ShieldCheck,
+  Trash2,
 } from 'lucide-react';
 import { fetchApi } from '../../../../lib/apiClient';
 import { formatCurrency, formatDate, getStatusBadge } from '../../../../lib/utils';
@@ -23,6 +24,23 @@ export default function EmployeeDetailPage() {
   const [data, setData] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'salary' | 'payroll' | 'documents'>('overview');
   const [loading, setLoading] = useState(true);
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+
+  const handleDeleteDoc = async (docId: string, docName: string) => {
+    if (!window.confirm(`Are you sure you want to delete "${docName}"?`)) return;
+    try {
+      setDeletingDocId(docId);
+      await fetchApi(`/documents/${docId}`, { method: 'DELETE' });
+      setData((prev: any) => ({
+        ...prev,
+        documents: (prev.documents || []).filter((d: any) => d.id !== docId),
+      }));
+    } catch (err: any) {
+      alert(`Failed to delete document: ${err.message}`);
+    } finally {
+      setDeletingDocId(null);
+    }
+  };
 
   useEffect(() => {
     async function loadEmployee() {
@@ -249,9 +267,20 @@ export default function EmployeeDetailPage() {
                       <p className="text-[10px] text-slate-500 uppercase">{doc.document_type}</p>
                     </div>
                   </div>
-                  <Link href={`/documents/${doc.id}`} className="text-xs font-semibold text-indigo-600 hover:underline">
-                    View
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link href={`/documents/${doc.id}`} className="text-xs font-semibold text-indigo-600 hover:underline">
+                      View
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteDoc(doc.id, doc.file_name)}
+                      disabled={deletingDocId === doc.id}
+                      className="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors disabled:opacity-50 cursor-pointer"
+                      title="Delete document"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

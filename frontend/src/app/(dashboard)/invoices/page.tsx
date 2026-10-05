@@ -26,9 +26,9 @@ export default function InvoicesPage() {
   // New Invoice Form
   const [invForm, setInvForm] = useState({
     vendor_name: '',
-    invoice_number: `INV-2026-${Math.floor(100 + Math.random() * 900)}`,
-    invoice_date: new Date().toISOString().split('T')[0],
-    due_date: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+    invoice_number: 'INV-2026-101',
+    invoice_date: '2026-10-01',
+    due_date: '2026-10-15',
     tax_rate: 18,
     notes: '',
   });
@@ -51,6 +51,14 @@ export default function InvoicesPage() {
 
   useEffect(() => {
     loadInvoices();
+    setInvForm({
+      vendor_name: '',
+      invoice_number: `INV-2026-${Math.floor(100 + Math.random() * 900)}`,
+      invoice_date: new Date().toISOString().split('T')[0],
+      due_date: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+      tax_rate: 18,
+      notes: '',
+    });
   }, []);
 
   const subtotal = lineItems.reduce((acc, item) => acc + (item.quantity * item.unit_price), 0);

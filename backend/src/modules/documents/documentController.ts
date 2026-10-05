@@ -186,3 +186,45 @@ export async function queryDocument(req: Request, res: Response) {
     res.status(500).json({ error: err.message });
   }
 }
+
+export async function deleteDocument(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const orgId = req.organizationId;
+
+    // Check if document exists and belongs to this organization
+    const { data: doc, error: fetchError } = await supabaseAdmin
+      .from('documents')
+      .select('id, storage_path, file_name')
+      .eq('id', id)
+      .eq('organization_id', orgId)
+      .single();
+
+    if (fetchError || !doc) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    // 1. Remove from Supabase Storage if storage_path exists
+    if (doc.storage_path) {
+      try {
+        await supabaseAdmin.storage.from('documents').remove([doc.storage_path]);
+      } catch (storageErr) {
+        console.warn('Notice: Error removing file from storage:', storageErr);
+      }
+    }
+
+    // 2. Delete document record (extractions cascade automatically)
+    const { error: deleteError } = await supabaseAdmin
+      .from('documents')
+      .delete()
+      .eq('id', id)
+      .eq('organization_id', orgId);
+
+    if (deleteError) throw deleteError;
+
+    res.json({ success: true, message: `Document "${doc.file_name}" deleted successfully` });
+  } catch (err: any) {
+    console.error('deleteDocument error:', err);
+    res.status(500).json({ error: err.message });
+  }
+}

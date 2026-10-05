@@ -33,10 +33,10 @@ export default function EmployeesPage() {
     last_name: '',
     email: '',
     phone: '',
-    employee_id: `EMP-${Math.floor(100 + Math.random() * 900)}`,
+    employee_id: 'EMP-101',
     department_id: '',
     designation: '',
-    joining_date: new Date().toISOString().split('T')[0],
+    joining_date: '2026-10-01',
     employment_type: 'full_time',
     salary_type: 'monthly',
     basic_salary: 45000,
@@ -66,6 +66,11 @@ export default function EmployeesPage() {
 
   useEffect(() => {
     loadData();
+    setFormData((prev) => ({
+      ...prev,
+      employee_id: `EMP-${Math.floor(100 + Math.random() * 900)}`,
+      joining_date: new Date().toISOString().split('T')[0],
+    }));
   }, []);
 
   const handleCreateEmployee = async (e: React.FormEvent) => {

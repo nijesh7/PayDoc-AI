@@ -14,6 +14,8 @@ import {
   ArrowRight,
   X,
   FileCheck,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { fetchApi } from '../../../lib/apiClient';
 import { formatDate, getStatusBadge } from '../../../lib/utils';
@@ -36,6 +38,9 @@ export default function DocumentsPage() {
   const [uploading, setUploading] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [confirmDeleteDoc, setConfirmDeleteDoc] = useState<any | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const loadDocuments = async () => {
     try {
@@ -46,6 +51,22 @@ export default function DocumentsPage() {
       console.error('Failed to load documents:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDeleteDoc) return;
+    try {
+      setDeletingId(confirmDeleteDoc.id);
+      setDeleteError(null);
+      await fetchApi(`/documents/${confirmDeleteDoc.id}`, { method: 'DELETE' });
+      setDocuments((prev) => prev.filter((d) => d.id !== confirmDeleteDoc.id));
+      setConfirmDeleteDoc(null);
+    } catch (err: any) {
+      console.error('Delete document failed:', err);
+      setDeleteError(err.message || 'Failed to delete document. Please try again.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -159,9 +180,23 @@ export default function DocumentsPage() {
                   <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                     <FileText className="w-5 h-5" />
                   </div>
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border capitalize ${getStatusBadge(doc.processing_status)}`}>
-                    {doc.document_type?.replace('_', ' ')}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border capitalize ${getStatusBadge(doc.processing_status)}`}>
+                      {doc.document_type?.replace('_', ' ')}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setConfirmDeleteDoc(doc);
+                      }}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                      title="Delete document"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 <h3 className="font-semibold text-sm text-slate-900 dark:text-white mt-3 line-clamp-1 group-hover:text-indigo-600 transition-colors">
@@ -247,6 +282,79 @@ export default function DocumentsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {confirmDeleteDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5 text-rose-600 dark:text-rose-400">
+                <div className="w-8 h-8 rounded-lg bg-rose-50 dark:bg-rose-950/60 flex items-center justify-center">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                </div>
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Delete Document</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteDoc(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-3">
+              {deleteError && (
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-xs text-rose-600 dark:text-rose-400 flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold">Unable to delete document</p>
+                    <p className="text-[11px] mt-0.5">{deleteError}</p>
+                  </div>
+                </div>
+              )}
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                Are you sure you want to delete <strong className="text-slate-900 dark:text-white font-mono break-all">{confirmDeleteDoc.file_name}</strong>?
+              </p>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                This will permanently remove the file from private cloud storage along with its AI classifications and extraction metadata. This action cannot be undone.
+              </p>
+            </div>
+
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmDeleteDoc(null);
+                  setDeleteError(null);
+                }}
+                disabled={Boolean(deletingId)}
+                className="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={Boolean(deletingId)}
+                className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+              >
+                {deletingId ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Permanently</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}

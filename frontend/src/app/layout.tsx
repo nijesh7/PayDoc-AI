@@ -47,7 +47,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="h-full font-sans antialiased bg-slate-50 dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 selection:bg-indigo-500/20 selection:text-indigo-500">
+      <body suppressHydrationWarning className="h-full font-sans antialiased bg-slate-50 dark:bg-[#0B0F19] text-slate-900 dark:text-slate-100 selection:bg-indigo-500/20 selection:text-indigo-500">
         <ThemeProvider>
           {children}
         </ThemeProvider>

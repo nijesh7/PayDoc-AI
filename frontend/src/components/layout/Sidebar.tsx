@@ -26,39 +26,42 @@ import { UserRole, normalizeRole, ROLE_DEFINITIONS } from '@/types/auth';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [currentRole, setCurrentRole] = useState<UserRole>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('paydoc_active_role');
-      if (saved) return normalizeRole(saved);
-      const path = window.location.pathname;
-      if (path.startsWith('/admin')) return 'ADMIN';
-      if (path.startsWith('/hr')) return 'HR';
-      if (path.startsWith('/accountant')) return 'ACCOUNTANT';
-      if (path.startsWith('/employee')) return 'EMPLOYEE';
-    }
-    return 'ADMIN';
-  });
+  const roleFromPath: UserRole = pathname?.startsWith('/admin')
+    ? 'ADMIN'
+    : pathname?.startsWith('/hr')
+    ? 'HR'
+    : pathname?.startsWith('/accountant')
+    ? 'ACCOUNTANT'
+    : pathname?.startsWith('/employee')
+    ? 'EMPLOYEE'
+    : 'ADMIN';
+
+  const [currentRole, setCurrentRole] = useState<UserRole>(roleFromPath);
   const [userName, setUserName] = useState<string>('Account User');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const saved = localStorage.getItem('paydoc_active_role');
     const savedName = localStorage.getItem('paydoc_user_name');
 
+    let active = roleFromPath;
     if (pathname?.startsWith('/admin')) {
-      setCurrentRole('ADMIN');
+      active = 'ADMIN';
       localStorage.setItem('paydoc_active_role', 'ADMIN');
     } else if (pathname?.startsWith('/hr')) {
-      setCurrentRole('HR');
+      active = 'HR';
       localStorage.setItem('paydoc_active_role', 'HR');
     } else if (pathname?.startsWith('/accountant')) {
-      setCurrentRole('ACCOUNTANT');
+      active = 'ACCOUNTANT';
       localStorage.setItem('paydoc_active_role', 'ACCOUNTANT');
     } else if (pathname?.startsWith('/employee')) {
-      setCurrentRole('EMPLOYEE');
+      active = 'EMPLOYEE';
       localStorage.setItem('paydoc_active_role', 'EMPLOYEE');
     } else if (saved) {
-      setCurrentRole(normalizeRole(saved));
+      active = normalizeRole(saved);
     }
+    setCurrentRole(active);
 
     if (savedName) {
       setUserName(savedName);
@@ -69,9 +72,9 @@ export function Sidebar() {
         ACCOUNTANT: 'Vikram Mehta (Accountant)',
         EMPLOYEE: 'Aarav Sharma (Employee)',
       };
-      setUserName(defaultNames[normalizeRole(saved)] || 'Organization User');
+      setUserName(defaultNames[active] || 'Organization User');
     }
-  }, [pathname]);
+  }, [pathname, roleFromPath]);
 
   const getNavItems = () => {
     switch (currentRole) {
@@ -154,7 +157,7 @@ export function Sidebar() {
         </Link>
 
         {/* Active Role Badge */}
-        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getRoleBadgeStyle()}`}>
+        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${getRoleBadgeStyle()}`} suppressHydrationWarning>
           {currentRole}
         </span>
       </div>
@@ -198,13 +201,13 @@ export function Sidebar() {
       {/* User Session & Organization Footer */}
       <div className="p-3 border-t border-slate-200 dark:border-slate-800/90 bg-slate-50/50 dark:bg-slate-900/40">
         <div className="p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/80 flex items-center justify-between gap-2 shadow-xs">
-          <div className="flex items-center gap-2.5 overflow-hidden">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-600 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
+          <div className="flex items-center gap-2.5 overflow-hidden" suppressHydrationWarning>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-violet-600 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs" suppressHydrationWarning>
               {userName.charAt(0) || currentRole.charAt(0)}
             </div>
-            <div className="overflow-hidden">
-              <p className="text-xs font-semibold text-slate-900 dark:text-white truncate">{userName}</p>
-              <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium truncate">{currentRole} • Acme Tech</p>
+            <div className="overflow-hidden" suppressHydrationWarning>
+              <p className="text-xs font-semibold text-slate-900 dark:text-white truncate" suppressHydrationWarning>{userName}</p>
+              <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium truncate" suppressHydrationWarning>{currentRole} • Acme Tech</p>
             </div>
           </div>
           <button

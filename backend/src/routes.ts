@@ -63,6 +63,7 @@ apiRouter.get('/documents', documentCtrl.listDocuments);
 apiRouter.post('/documents/upload', upload.single('file'), documentCtrl.uploadAndProcessDocument);
 apiRouter.get('/documents/:id/signed-url', documentCtrl.getDocumentSignedUrl);
 apiRouter.post('/documents/:id/query', documentCtrl.queryDocument);
+apiRouter.delete('/documents/:id', documentCtrl.deleteDocument);
 
 // --- 6. Invoices ---
 apiRouter.get('/invoices', invoiceCtrl.listInvoices);
