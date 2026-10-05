@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { supabaseAdmin } from '../../config/supabase';
+import { approvalService } from '../../services/approvals/approvalService';
 
 export async function listInvoices(req: Request, res: Response) {
   try {
@@ -114,6 +115,18 @@ export async function createInvoice(req: Request, res: Response) {
       target_entity_id: invoice.id,
       status: 'active',
     });
+
+    // Auto-initiate approval workflow if amount matches criteria
+    try {
+      await approvalService.initiateApproval(req, {
+        entityType: 'invoice',
+        entityId: invoice.id,
+        amount: Number(invoice.total_amount || 0),
+        creatorId: req.user?.id,
+      });
+    } catch (appErr: any) {
+      console.warn('[createInvoice] Approval initiation notice:', appErr.message);
+    }
 
     res.status(201).json({ invoice });
   } catch (err: any) {

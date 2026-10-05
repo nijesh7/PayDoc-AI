@@ -17,6 +17,9 @@ import {
   UserCheck,
   User,
   Shield,
+  ShieldCheck,
+  Sliders,
+  CalendarDays,
   LogOut,
   Building2,
   ChevronRight,
@@ -81,6 +84,7 @@ export function Sidebar() {
       case 'EMPLOYEE':
         return [
           { label: 'Employee Portal', href: '/employee/dashboard', icon: LayoutDashboard },
+          { label: 'Leave & Attendance', href: '/attendance', icon: CalendarDays },
           { label: 'My Documents', href: '/documents', icon: FileText, badge: 'AI' },
           { label: 'My Profile', href: '/profile', icon: User },
         ];
@@ -88,6 +92,7 @@ export function Sidebar() {
       case 'ACCOUNTANT':
         return [
           { label: 'Finance Dashboard', href: '/accountant/dashboard', icon: LayoutDashboard },
+          { label: 'Approvals Hub', href: '/approvals', icon: ShieldCheck },
           { label: 'Invoices', href: '/invoices', icon: Receipt },
           { label: 'Payments Ledger', href: '/payments', icon: CreditCard },
           { label: 'Documents & Bills', href: '/documents', icon: FileText, badge: 'AI' },
@@ -100,6 +105,9 @@ export function Sidebar() {
         return [
           { label: 'HR Dashboard', href: '/hr/dashboard', icon: LayoutDashboard },
           { label: 'Staff Directory', href: '/employees', icon: Users },
+          { label: 'Leave & Attendance', href: '/attendance', icon: CalendarDays },
+          { label: 'Salary Components', href: '/settings/salary-components', icon: Sliders },
+          { label: 'Approvals Hub', href: '/approvals', icon: ShieldCheck },
           { label: 'Payroll Preparation', href: '/payroll', icon: FileSpreadsheet },
           { label: 'Payments Overview', href: '/payments', icon: CreditCard },
           { label: 'HR Documents', href: '/documents', icon: FileText, badge: 'AI' },
@@ -113,7 +121,10 @@ export function Sidebar() {
         return [
           { label: 'Executive Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
           { label: 'Users & Roles', href: '/admin/users', icon: UserCheck, badge: 'RBAC' },
+          { label: 'Approvals Hub', href: '/approvals', icon: ShieldCheck },
           { label: 'Employees', href: '/employees', icon: Users },
+          { label: 'Leave & Attendance', href: '/attendance', icon: CalendarDays },
+          { label: 'Salary Components', href: '/settings/salary-components', icon: Sliders },
           { label: 'Payroll & Payslips', href: '/payroll', icon: FileSpreadsheet },
           { label: 'Payments Ledger', href: '/payments', icon: CreditCard },
           { label: 'Documents & AI', href: '/documents', icon: FileText, badge: 'AI' },

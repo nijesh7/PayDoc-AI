@@ -2,7 +2,9 @@
 -- PAYDOC AI — Migration 0005: Configurable Salary Components & Approvals Engine
 -- ============================================================================
 
--- Ensure RLS helper functions exist
+-- 0. Ensure user status column and RLS helper functions exist
+ALTER TABLE users ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active';
+
 CREATE OR REPLACE FUNCTION current_user_organization_id()
 RETURNS UUID AS $$
     SELECT organization_id FROM users WHERE id = auth.uid();
@@ -10,7 +12,7 @@ $$ LANGUAGE sql STABLE SECURITY DEFINER;
 
 CREATE OR REPLACE FUNCTION current_user_role()
 RETURNS TEXT AS $$
-    SELECT lower(role) FROM users WHERE id = auth.uid() AND (status IS NULL OR status = 'active');
+    SELECT lower(role) FROM users WHERE id = auth.uid() AND (is_active = true);
 $$ LANGUAGE sql STABLE SECURITY DEFINER;
 
 -- ----------------------------------------------------------------------------
@@ -152,36 +154,43 @@ ALTER TABLE approvals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE approval_steps ENABLE ROW LEVEL SECURITY;
 
 -- Salary Component Definitions Policies
+DROP POLICY IF EXISTS "Users can view salary component definitions in their organization" ON salary_component_definitions;
 CREATE POLICY "Users can view salary component definitions in their organization"
 ON salary_component_definitions FOR SELECT TO authenticated
 USING (organization_id = current_user_organization_id());
 
+DROP POLICY IF EXISTS "Admin and HR can manage salary component definitions" ON salary_component_definitions;
 CREATE POLICY "Admin and HR can manage salary component definitions"
 ON salary_component_definitions FOR ALL TO authenticated
 USING (organization_id = current_user_organization_id() AND current_user_role() IN ('admin', 'hr'))
 WITH CHECK (organization_id = current_user_organization_id() AND current_user_role() IN ('admin', 'hr'));
 
 -- CTC Templates Policies
+DROP POLICY IF EXISTS "Users can view ctc templates in their organization" ON ctc_templates;
 CREATE POLICY "Users can view ctc templates in their organization"
 ON ctc_templates FOR SELECT TO authenticated
 USING (organization_id = current_user_organization_id());
 
+DROP POLICY IF EXISTS "Admin and HR can manage ctc templates" ON ctc_templates;
 CREATE POLICY "Admin and HR can manage ctc templates"
 ON ctc_templates FOR ALL TO authenticated
 USING (organization_id = current_user_organization_id() AND current_user_role() IN ('admin', 'hr'))
 WITH CHECK (organization_id = current_user_organization_id() AND current_user_role() IN ('admin', 'hr'));
 
 -- CTC Template Components Policies
+DROP POLICY IF EXISTS "Users can view ctc template components in their organization" ON ctc_template_components;
 CREATE POLICY "Users can view ctc template components in their organization"
 ON ctc_template_components FOR SELECT TO authenticated
 USING (organization_id = current_user_organization_id());
 
+DROP POLICY IF EXISTS "Admin and HR can manage ctc template components" ON ctc_template_components;
 CREATE POLICY "Admin and HR can manage ctc template components"
 ON ctc_template_components FOR ALL TO authenticated
 USING (organization_id = current_user_organization_id() AND current_user_role() IN ('admin', 'hr'))
 WITH CHECK (organization_id = current_user_organization_id() AND current_user_role() IN ('admin', 'hr'));
 
 -- Employee Salary Components Policies
+DROP POLICY IF EXISTS "Authorized users can view employee salary components" ON employee_salary_components;
 CREATE POLICY "Authorized users can view employee salary components"
 ON employee_salary_components FOR SELECT TO authenticated
 USING (
@@ -192,34 +201,41 @@ USING (
     )
 );
 
+DROP POLICY IF EXISTS "Admin and HR can manage employee salary components" ON employee_salary_components;
 CREATE POLICY "Admin and HR can manage employee salary components"
 ON employee_salary_components FOR ALL TO authenticated
 USING (organization_id = current_user_organization_id() AND current_user_role() IN ('admin', 'hr'))
 WITH CHECK (organization_id = current_user_organization_id() AND current_user_role() IN ('admin', 'hr'));
 
 -- Approvals Policies
+DROP POLICY IF EXISTS "Authorized users can view workflows" ON approval_workflows;
 CREATE POLICY "Authorized users can view workflows"
 ON approval_workflows FOR SELECT TO authenticated
 USING (organization_id = current_user_organization_id());
 
+DROP POLICY IF EXISTS "Admin can manage workflows" ON approval_workflows;
 CREATE POLICY "Admin can manage workflows"
 ON approval_workflows FOR ALL TO authenticated
 USING (organization_id = current_user_organization_id() AND current_user_role() = 'admin')
 WITH CHECK (organization_id = current_user_organization_id() AND current_user_role() = 'admin');
 
+DROP POLICY IF EXISTS "Users can view approvals in their organization" ON approvals;
 CREATE POLICY "Users can view approvals in their organization"
 ON approvals FOR SELECT TO authenticated
 USING (organization_id = current_user_organization_id());
 
+DROP POLICY IF EXISTS "Users can manage approvals in their organization" ON approvals;
 CREATE POLICY "Users can manage approvals in their organization"
 ON approvals FOR ALL TO authenticated
 USING (organization_id = current_user_organization_id())
 WITH CHECK (organization_id = current_user_organization_id());
 
+DROP POLICY IF EXISTS "Users can view approval steps in their organization" ON approval_steps;
 CREATE POLICY "Users can view approval steps in their organization"
 ON approval_steps FOR SELECT TO authenticated
 USING (organization_id = current_user_organization_id());
 
+DROP POLICY IF EXISTS "Users can update approval steps in their organization" ON approval_steps;
 CREATE POLICY "Users can update approval steps in their organization"
 ON approval_steps FOR ALL TO authenticated
 USING (organization_id = current_user_organization_id())
@@ -228,6 +244,14 @@ WITH CHECK (organization_id = current_user_organization_id());
 -- ----------------------------------------------------------------------------
 -- 8. TRIGGERS FOR UPDATED_AT
 -- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION trigger_set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 DO $$
 DECLARE
     t text;

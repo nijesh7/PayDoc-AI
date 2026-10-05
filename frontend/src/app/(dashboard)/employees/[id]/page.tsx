@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { fetchApi } from '../../../../lib/apiClient';
 import { formatCurrency, formatDate, getStatusBadge } from '../../../../lib/utils';
+import SalaryStructureTab from './SalaryStructureTab';
 
 export default function EmployeeDetailPage() {
   const { id } = useParams();
@@ -173,33 +174,15 @@ export default function EmployeeDetailPage() {
       )}
 
       {activeTab === 'salary' && (
-        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white">Compensation Components</h3>
-            <span className="font-mono text-sm font-bold text-indigo-600">
-              Base: {formatCurrency(employee.basic_salary)} / {employee.salary_type}
-            </span>
-          </div>
-
-          <div className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-            <div className="py-2.5 flex justify-between font-semibold">
-              <span>Component Name</span>
-              <span>Type</span>
-              <span>Amount</span>
-            </div>
-            {(salaryComponents || []).map((c: any) => (
-              <div key={c.id} className="py-2.5 flex justify-between items-center">
-                <span className="font-medium text-slate-800 dark:text-slate-200">{c.name}</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${c.component_type === 'allowance' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>
-                  {c.component_type}
-                </span>
-                <span className="font-mono font-semibold text-slate-900 dark:text-white">
-                  {formatCurrency(c.amount)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <SalaryStructureTab
+          employeeId={employee.id}
+          currentBasic={employee.basic_salary}
+          salaryType={employee.salary_type}
+          onSalaryUpdated={async () => {
+            const res = await fetchApi(`/employees/${id}`);
+            setData(res);
+          }}
+        />
       )}
 
       {activeTab === 'payroll' && (

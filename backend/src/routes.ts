@@ -13,6 +13,10 @@ import * as analyticsCtrl from './modules/analytics/analyticsController';
 import * as notificationCtrl from './modules/notifications/notificationController';
 import * as organizationCtrl from './modules/organization/organizationController';
 import * as searchCtrl from './modules/search/searchController';
+import * as salaryCompCtrl from './modules/salaryComponents/salaryComponentController';
+import * as approvalCtrl from './modules/approvals/approvalController';
+import * as leaveCtrl from './modules/leave/leaveController';
+import * as attendanceCtrl from './modules/attendance/attendanceController';
 import { userController } from './modules/users/userController';
 
 const upload = multer({
@@ -85,3 +89,36 @@ apiRouter.post('/departments', requireRole(['ADMIN', 'HR']), organizationCtrl.cr
 
 // --- 10. Global Search ---
 apiRouter.get('/search', searchCtrl.globalSearch);
+
+// --- 11. Configurable Salary Components & CTC Templates ---
+apiRouter.get('/salary-components/definitions', salaryCompCtrl.listComponentDefinitions);
+apiRouter.post('/salary-components/definitions', requireRole(['ADMIN', 'HR']), salaryCompCtrl.createComponentDefinition);
+apiRouter.put('/salary-components/definitions/:id', requireRole(['ADMIN', 'HR']), salaryCompCtrl.updateComponentDefinition);
+apiRouter.get('/salary-components/preview', salaryCompCtrl.calculateCTCPreview);
+
+apiRouter.get('/ctc-templates', salaryCompCtrl.listCTCTemplates);
+apiRouter.post('/ctc-templates', requireRole(['ADMIN', 'HR']), salaryCompCtrl.createCTCTemplate);
+
+apiRouter.get('/employees/:id/salary-structure', salaryCompCtrl.getEmployeeSalaryStructure);
+apiRouter.post('/employees/:id/salary-revision', requireRole(['ADMIN', 'HR']), salaryCompCtrl.reviseEmployeeSalary);
+
+// --- 12. Generic Approvals Engine ---
+apiRouter.get('/approvals/pending', approvalCtrl.listPendingApprovals);
+apiRouter.get('/approvals/history', approvalCtrl.listApprovalHistory);
+apiRouter.get('/approvals/:id', approvalCtrl.getApprovalDetails);
+apiRouter.post('/approvals/:id/action', requireRole(['ADMIN', 'HR', 'ACCOUNTANT']), approvalCtrl.actionApprovalStep);
+apiRouter.get('/approval-workflows', requireRole(['ADMIN']), approvalCtrl.listApprovalWorkflows);
+apiRouter.put('/approval-workflows/:id', requireRole(['ADMIN']), approvalCtrl.updateApprovalWorkflow);
+
+// --- 13. Leave & Attendance Management ---
+apiRouter.get('/leave-types', leaveCtrl.getLeaveTypes);
+apiRouter.get('/leave-balances/:employeeId', leaveCtrl.getEmployeeLeaveBalances);
+apiRouter.get('/leave-requests', leaveCtrl.getLeaveRequests);
+apiRouter.post('/leave-requests', leaveCtrl.createLeaveRequest);
+apiRouter.patch('/leave-requests/:id/action', requireRole(['ADMIN', 'HR']), leaveCtrl.actionLeaveRequest);
+apiRouter.get('/holidays', leaveCtrl.getHolidays);
+
+apiRouter.get('/attendance', attendanceCtrl.getAttendance);
+apiRouter.post('/attendance', requireRole(['ADMIN', 'HR']), attendanceCtrl.recordAttendance);
+apiRouter.post('/attendance/bulk', requireRole(['ADMIN', 'HR']), attendanceCtrl.bulkRecordAttendance);
+apiRouter.get('/attendance/summary/:employeeId', attendanceCtrl.getEmployeeAttendanceSummary);

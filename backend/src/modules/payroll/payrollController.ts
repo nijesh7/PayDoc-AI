@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { supabaseAdmin } from '../../config/supabase';
 import { calculateNetSalary } from '../../services/payroll/calculator';
 import { generatePayslipPDF } from '../../services/pdf/payslipGenerator';
+import { approvalService } from '../../services/approvals/approvalService';
 
 export async function listPayrollRuns(req: Request, res: Response) {
   try {
@@ -97,6 +98,25 @@ export async function createPayrollRun(req: Request, res: Response) {
 
     if (empError) throw empError;
 
+    // 2b. Fetch attendance records for the payroll month to auto-calculate LOP and overtime
+    const totalMonthDays = new Date(year, month, 0).getDate();
+    const startDateStr = `${year}-${String(month).padStart(2, '0')}-01`;
+    const endDateStr = `${year}-${String(month).padStart(2, '0')}-${String(totalMonthDays).padStart(2, '0')}`;
+
+    const { data: monthAttendance } = await supabaseAdmin
+      .from('attendance_records')
+      .select('*')
+      .eq('organization_id', orgId)
+      .gte('date', startDateStr)
+      .lte('date', endDateStr);
+
+    const attendanceByEmployee = new Map<string, any[]>();
+    for (const rec of monthAttendance || []) {
+      const list = attendanceByEmployee.get(rec.employee_id) || [];
+      list.push(rec);
+      attendanceByEmployee.set(rec.employee_id, list);
+    }
+
     const payrollItemsToInsert = [];
 
     // 3. Deterministic calculation for each employee
@@ -119,9 +139,27 @@ export async function createPayrollRun(req: Request, res: Response) {
           percentageValue: c.percentage_value,
         }));
 
+      // Calculate attendance, LOP days and overtime hours
+      const empRecords = attendanceByEmployee.get(emp.id) || [];
+      let lopDays = 0;
+      let otHours = 0;
+
+      for (const r of empRecords) {
+        otHours += Number(r.overtime_hours || 0);
+        if (r.status === 'absent') {
+          lopDays += 1;
+        } else if (r.status === 'half_day') {
+          lopDays += 0.5;
+        }
+      }
+
       const calc = calculateNetSalary({
         basicSalary: Number(emp.basic_salary),
         salaryType: emp.salary_type,
+        totalWorkingDays: totalMonthDays,
+        daysWorked: totalMonthDays - lopDays,
+        unpaidLeaveDays: lopDays,
+        overtimeHours: otHours,
         allowances,
         deductions,
       });
@@ -131,16 +169,21 @@ export async function createPayrollRun(req: Request, res: Response) {
         organization_id: orgId,
         employee_id: emp.id,
         basic_salary: calc.basicSalary,
-        overtime_hours: 0,
-        overtime_amount: 0,
+        overtime_hours: calc.overtimeHours,
+        overtime_amount: calc.overtimeAmount,
         bonus_amount: 0,
         allowances_amount: calc.allowancesAmount,
         deductions_amount: calc.deductionsAmount,
         advances_amount: 0,
-        leave_deductions_amount: 0,
+        lop_days: lopDays,
+        leave_deductions_amount: calc.leaveDeductionsAmount,
         net_salary: calc.netSalary,
         status: 'draft',
-        breakdown: calc.breakdown,
+        breakdown: {
+          ...calc.breakdown,
+          lopDays,
+          attendanceRecordsCount: empRecords.length,
+        },
       });
     }
 
@@ -158,6 +201,18 @@ export async function createPayrollRun(req: Request, res: Response) {
       .select('*')
       .eq('id', run.id)
       .single();
+
+    // Initiate multi-level approval workflow
+    try {
+      await approvalService.initiateApproval(req, {
+        entityType: 'payroll_run',
+        entityId: run.id,
+        amount: Number(updatedRun?.total_net_salary || 0),
+        creatorId: req.user?.id,
+      });
+    } catch (appErr: any) {
+      console.warn('[createPayrollRun] Approval initiation notice:', appErr.message);
+    }
 
     res.status(201).json({ payrollRun: updatedRun });
   } catch (err: any) {
