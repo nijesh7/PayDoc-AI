@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   X,
   Trash2,
+  Sparkles,
 } from 'lucide-react';
 import { fetchApi } from '../../../lib/apiClient';
 import { formatCurrency, formatDate, getStatusBadge } from '../../../lib/utils';
@@ -34,7 +35,7 @@ export default function InvoicesPage() {
   });
 
   const [lineItems, setLineItems] = useState([
-    { description: 'Cloud Infrastructure & Compute Services', quantity: 1, unit_price: 25000 },
+    { description: 'Tata Communications Cloud & Hosting Infrastructure', quantity: 1, unit_price: 35000 },
   ]);
 
   const loadInvoices = async () => {
@@ -60,6 +61,27 @@ export default function InvoicesPage() {
       notes: '',
     });
   }, []);
+
+  const fillSampleIndianInvoice = () => {
+    const samples = [
+      { vendor: 'Tata Communications Ltd', item: 'Tata Cloud & Data Center Hosting (Sept 2026)', price: 38000, notes: 'Monthly corporate cloud servers and DB backups' },
+      { vendor: 'Godrej Office Solutions', item: 'Ergonomic Workstations & Chairs (Set of 4)', price: 28000, notes: 'New engineering floor office furniture' },
+      { vendor: 'Khaitan & Co Legal Advisors', item: 'Quarterly Corporate Legal Retainer & ROC Filings', price: 25000, notes: 'Q3 compliance and statutory regulatory review' },
+      { vendor: 'Infosys BPM Services', item: 'Enterprise Application Maintenance & SLA Monitoring', price: 42000, notes: 'Technical SLA support and system monitoring' },
+      { vendor: 'Reliance Retail Office Mart', item: 'Corporate Stationery, Paper & Pantry Consumables', price: 12500, notes: 'Monthly office facilities and supplies' },
+    ];
+    const picked = samples[Math.floor(Math.random() * samples.length)];
+    const randomInvNum = `INV-2026-${Math.floor(100 + Math.random() * 900)}`;
+    setInvForm((prev) => ({
+      ...prev,
+      vendor_name: picked.vendor,
+      invoice_number: randomInvNum,
+      notes: picked.notes,
+    }));
+    setLineItems([
+      { description: picked.item, quantity: 1, unit_price: picked.price },
+    ]);
+  };
 
   const subtotal = lineItems.reduce((acc, item) => acc + (item.quantity * item.unit_price), 0);
   const taxAmount = (subtotal * invForm.tax_rate) / 100;
@@ -216,10 +238,24 @@ export default function InvoicesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
           <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-[90vh] flex flex-col">
             <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <h3 className="font-bold text-base text-slate-900 dark:text-white">Create New Invoice</h3>
-              <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
+              <div>
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">Create New Invoice</h3>
+                <p className="text-xs text-slate-500">Record vendor bill, Indian GST breakdown, and payment due date.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={fillSampleIndianInvoice}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80 text-xs font-semibold hover:bg-indigo-100 transition-colors cursor-pointer"
+                  title="Auto-fill realistic Indian vendor details"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <span>⚡ Fill Sample Indian Invoice</span>
+                </button>
+                <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600 p-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleCreateInvoice} className="p-6 space-y-4 overflow-y-auto flex-1">
@@ -229,10 +265,10 @@ export default function InvoicesPage() {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. AWS Cloud Services"
+                    placeholder="e.g. Tata Communications / Godrej / Khaitan & Co"
                     value={invForm.vendor_name}
                     onChange={(e) => setInvForm({ ...invForm, vendor_name: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden focus:border-indigo-500"
                   />
                 </div>
                 <div>

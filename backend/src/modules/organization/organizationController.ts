@@ -13,23 +13,29 @@ export async function getOrganizationSettings(req: Request, res: Response) {
     ] = await Promise.all([
       supabaseAdmin.from('organizations').select('*').eq('id', orgId).single(),
       supabaseAdmin.from('departments').select('*').eq('organization_id', orgId).order('name', { ascending: true }),
-      supabaseAdmin.from('users').select('id, email, full_name, role, is_active, created_at').eq('organization_id', orgId),
+      supabaseAdmin.from('users').select('id, email, full_name, role, status, is_active, created_at').eq('organization_id', orgId),
       supabaseAdmin.from('audit_logs').select('*').eq('organization_id', orgId).order('created_at', { ascending: false }).limit(20),
     ]);
+
+    const formattedMembers = (members || []).map((m: any) => ({
+      ...m,
+      status: m.status || (m.is_active === false ? 'pending' : 'active'),
+    }));
 
     if (orgError && !org) {
       // Fallback demo org object if not in DB
       return res.json({
         organization: {
           id: orgId,
-          name: 'Acme Technologies Pvt Ltd',
-          slug: 'acme-tech',
+          name: 'Cognivex Technologies Pvt Ltd',
+          slug: 'cognivex',
           currency: 'INR',
           address: '402, Cyber Tower, Hitec City, Hyderabad',
           tax_id: '36AAACA1234A1Z5',
         },
         departments: departments || [],
-        members: members || [],
+        members: formattedMembers,
+        users: formattedMembers,
         auditLogs: auditLogs || [],
       });
     }
@@ -37,7 +43,8 @@ export async function getOrganizationSettings(req: Request, res: Response) {
     res.json({
       organization: org,
       departments: departments || [],
-      members: members || [],
+      members: formattedMembers,
+      users: formattedMembers,
       auditLogs: auditLogs || [],
     });
   } catch (err: any) {

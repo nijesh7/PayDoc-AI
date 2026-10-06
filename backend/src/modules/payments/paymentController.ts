@@ -112,3 +112,51 @@ export async function getPaymentSummary(req: Request, res: Response) {
     res.status(500).json({ error: err.message });
   }
 }
+
+export async function createPayment(req: Request, res: Response) {
+  try {
+    const orgId = req.organizationId;
+    const {
+      payment_type = 'other',
+      vendor_name,
+      employee_id,
+      amount,
+      due_date = new Date().toISOString().split('T')[0],
+      payment_date,
+      status = 'pending',
+      payment_method = 'bank_transfer',
+      reference_number,
+      notes,
+    } = req.body;
+
+    if (!amount || Number(amount) <= 0) {
+      return res.status(400).json({ error: 'Valid amount is required.' });
+    }
+
+    const { data: newPayment, error } = await supabaseAdmin
+      .from('payments')
+      .insert({
+        organization_id: orgId,
+        payment_type,
+        vendor_name: vendor_name || null,
+        employee_id: employee_id || null,
+        amount: Number(amount),
+        due_date,
+        payment_date: status === 'paid' ? (payment_date || due_date) : null,
+        status,
+        payment_method: status === 'paid' ? payment_method : null,
+        reference_number: reference_number || null,
+        notes: notes || null,
+      })
+      .select('*, employees(first_name, last_name, employee_id)')
+      .single();
+
+    if (error) throw error;
+
+    res.status(201).json({ payment: newPayment, message: 'Payment created successfully.' });
+  } catch (err: any) {
+    console.error('createPayment error:', err);
+    res.status(500).json({ error: err.message });
+  }
+}
+

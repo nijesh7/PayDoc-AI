@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Clock,
   X,
+  Sparkles,
 } from 'lucide-react';
 import { fetchApi } from '../../../lib/apiClient';
 import { formatCurrency, formatDate, getStatusBadge } from '../../../lib/utils';
@@ -72,6 +73,31 @@ export default function EmployeesPage() {
       joining_date: new Date().toISOString().split('T')[0],
     }));
   }, []);
+
+  const fillSampleIndianEmployee = () => {
+    const samples = [
+      { first: 'Rahul', last: 'Sharma', desig: 'Senior Backend Engineer', salary: 75000, bank: 'HDFC Bank', ifsc: 'HDFC0001234', acc: '50100234567890' },
+      { first: 'Pooja', last: 'Iyer', desig: 'Lead Product Designer', salary: 65000, bank: 'ICICI Bank', ifsc: 'ICIC0005678', acc: '91827364501234' },
+      { first: 'Arjun', last: 'Patel', desig: 'DevOps & Cloud Engineer', salary: 70000, bank: 'State Bank of India', ifsc: 'SBIN0009988', acc: '30291827364550' },
+      { first: 'Deepika', last: 'Nair', desig: 'HR & Talent Partner', salary: 50000, bank: 'Axis Bank', ifsc: 'UTIB0001122', acc: '92001004321987' },
+      { first: 'Vikas', last: 'Kulkarni', desig: 'Financial Analyst', salary: 55000, bank: 'Kotak Mahindra Bank', ifsc: 'KKBK0003344', acc: '60112233445566' },
+      { first: 'Ananya', last: 'Deshmukh', desig: 'Technical Project Manager', salary: 80000, bank: 'HDFC Bank', ifsc: 'HDFC0001234', acc: '50100987654321' },
+    ];
+    const picked = samples[Math.floor(Math.random() * samples.length)];
+    const randomSuffix = Math.floor(100 + Math.random() * 900);
+    setFormData((prev) => ({
+      ...prev,
+      first_name: picked.first,
+      last_name: picked.last,
+      email: `${picked.first.toLowerCase()}.${picked.last.toLowerCase()}${randomSuffix}@cognivex.com`,
+      phone: `+91 98${Math.floor(10000000 + Math.random() * 90000000)}`,
+      designation: picked.desig,
+      basic_salary: picked.salary,
+      bank_name: picked.bank,
+      bank_ifsc: picked.ifsc,
+      bank_account_number: picked.acc,
+    }));
+  };
 
   const handleCreateEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -236,10 +262,24 @@ export default function EmployeesPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
           <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden max-h-[90vh] flex flex-col">
             <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <h3 className="font-bold text-base text-slate-900 dark:text-white">Add New Employee</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-5 h-5" />
-              </button>
+              <div>
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">Add New Employee</h3>
+                <p className="text-xs text-slate-500">Configure profile, statutory salary, and banking information.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={fillSampleIndianEmployee}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/80 text-xs font-semibold hover:bg-indigo-100 transition-colors cursor-pointer"
+                  title="Auto-fill realistic Indian employee details"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                  <span>⚡ Fill Sample Indian Data</span>
+                </button>
+                <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-slate-600 p-1">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleCreateEmployee} className="p-6 space-y-4 overflow-y-auto flex-1">
@@ -249,9 +289,10 @@ export default function EmployeesPage() {
                   <input
                     type="text"
                     required
+                    placeholder="e.g. Rahul"
                     value={formData.first_name}
                     onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden focus:border-indigo-500"
                   />
                 </div>
                 <div>
@@ -259,22 +300,24 @@ export default function EmployeesPage() {
                   <input
                     type="text"
                     required
+                    placeholder="e.g. Sharma"
                     value={formData.last_name}
                     onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden focus:border-indigo-500"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Email Address *</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Work Email Address *</label>
                   <input
                     type="email"
                     required
+                    placeholder="e.g. rahul.sharma@cognivex.com"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden focus:border-indigo-500"
                   />
                 </div>
                 <div>
@@ -282,35 +325,59 @@ export default function EmployeesPage() {
                   <input
                     type="text"
                     required
+                    placeholder="e.g. EMP-105"
                     value={formData.employee_id}
                     onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden font-mono"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden font-mono focus:border-indigo-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Mobile Phone</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. +91 98765 43210"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden focus:border-indigo-500"
+                  />
+                </div>
+                <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Department</label>
                   <select
                     value={formData.department_id}
                     onChange={(e) => setFormData({ ...formData, department_id: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden focus:border-indigo-500"
                   >
                     {departments.map((d) => (
                       <option key={d.id} value={d.id}>{d.name}</option>
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Designation *</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Senior Software Engineer"
+                    placeholder="e.g. Senior Backend Engineer"
                     value={formData.designation}
                     onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Joining Date *</label>
+                  <input
+                    type="date"
+                    required
+                    value={formData.joining_date}
+                    onChange={(e) => setFormData({ ...formData, joining_date: e.target.value })}
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden focus:border-indigo-500"
                   />
                 </div>
               </div>
@@ -321,7 +388,7 @@ export default function EmployeesPage() {
                   <select
                     value={formData.employment_type}
                     onChange={(e) => setFormData({ ...formData, employment_type: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden focus:border-indigo-500"
                   >
                     <option value="full_time">Full Time</option>
                     <option value="part_time">Part Time</option>
@@ -334,7 +401,7 @@ export default function EmployeesPage() {
                   <select
                     value={formData.salary_type}
                     onChange={(e) => setFormData({ ...formData, salary_type: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden focus:border-indigo-500"
                   >
                     <option value="monthly">Monthly</option>
                     <option value="hourly">Hourly</option>
@@ -348,8 +415,45 @@ export default function EmployeesPage() {
                     required
                     value={formData.basic_salary}
                     onChange={(e) => setFormData({ ...formData, basic_salary: Number(e.target.value) })}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden font-mono"
+                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden font-mono focus:border-indigo-500"
                   />
+                </div>
+              </div>
+
+              {/* Banking Details Header */}
+              <div className="pt-2">
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider text-[10px] text-slate-500">Indian Bank Account Details</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Bank Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. HDFC Bank, SBI, ICICI"
+                      value={formData.bank_name}
+                      onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">IFSC Code</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. HDFC0001234"
+                      value={formData.bank_ifsc}
+                      onChange={(e) => setFormData({ ...formData, bank_ifsc: e.target.value.toUpperCase() })}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden font-mono focus:border-indigo-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Account Number</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 50100432109876"
+                      value={formData.bank_account_number}
+                      onChange={(e) => setFormData({ ...formData, bank_account_number: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white outline-hidden font-mono focus:border-indigo-500"
+                    />
+                  </div>
                 </div>
               </div>
 

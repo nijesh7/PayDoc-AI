@@ -62,24 +62,24 @@ INSERT INTO invoices (
     invoice_date, due_date, subtotal, tax_amount, discount_amount, total_amount,
     currency, status, notes
 ) VALUES
-    ('40000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'INV-2026-081', 'AWS Cloud Services', 'Acme Technologies Pvt Ltd', '2026-09-15', '2026-09-30', 42000.00, 7560.00, 0.00, 49560.00, 'INR', 'overdue', 'Monthly cloud hosting and database backup infrastructure'),
-    ('40000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'INV-2026-104', 'Apex Legal & Associates', 'Acme Technologies Pvt Ltd', '2026-09-28', '2026-10-15', 25000.00, 4500.00, 0.00, 29500.00, 'INR', 'due_soon', 'Quarterly compliance and legal advisory retainer'),
-    ('40000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'INV-2026-112', 'Reliant Office Supplies', 'Acme Technologies Pvt Ltd', '2026-09-20', '2026-10-05', 8500.00, 1530.00, 500.00, 9530.00, 'INR', 'paid', 'Ergonomic chairs and stationery consumables')
+    ('40000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'INV-2026-081', 'Tata Communications Cloud Services', 'Acme Technologies Pvt Ltd', '2026-09-15', '2026-09-30', 42000.00, 7560.00, 0.00, 49560.00, 'INR', 'overdue', 'Monthly cloud hosting and database backup infrastructure'),
+    ('40000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'INV-2026-104', 'Khaitan & Co Legal Advisors', 'Acme Technologies Pvt Ltd', '2026-09-28', '2026-10-15', 25000.00, 4500.00, 0.00, 29500.00, 'INR', 'due_soon', 'Quarterly compliance and legal advisory retainer'),
+    ('40000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'INV-2026-112', 'Godrej Office Solutions & Supplies', 'Acme Technologies Pvt Ltd', '2026-09-20', '2026-10-05', 8500.00, 1530.00, 500.00, 9530.00, 'INR', 'paid', 'Ergonomic chairs and stationery consumables')
 ON CONFLICT (id) DO NOTHING;
 
 -- 6. Sample Invoice Items
 INSERT INTO invoice_items (id, invoice_id, organization_id, description, quantity, unit_price, total_price)
 VALUES
-    ('50000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'EC2 & RDS Compute Instances (Sept 2026)', 1.00, 32000.00, 32000.00),
-    ('50000000-0000-0000-0000-000000000002', '40000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'S3 Storage & CloudFront Bandwidth', 1.00, 10000.00, 10000.00),
-    ('50000000-0000-0000-0000-000000000003', '40000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'Q3 Legal Compliance & Filing Services', 1.00, 25000.00, 25000.00),
-    ('50000000-0000-0000-0000-000000000004', '40000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'Ergonomic Desk Chairs (Set of 2)', 2.00, 4250.00, 8500.00)
+    ('50000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Tata Comms Cloud & Compute Instances (Sept 2026)', 1.00, 32000.00, 32000.00),
+    ('50000000-0000-0000-0000-000000000002', '40000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Tata Comms Object Storage & Network Bandwidth', 1.00, 10000.00, 10000.00),
+    ('50000000-0000-0000-0000-000000000003', '40000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'Khaitan & Co Q3 Legal Retainer & ROC Filings', 1.00, 25000.00, 25000.00),
+    ('50000000-0000-0000-0000-000000000004', '40000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'Godrej Ergonomic Desk Chairs (Set of 2)', 2.00, 4250.00, 8500.00)
 ON CONFLICT (id) DO NOTHING;
 
 -- 7. Sample Reminders
 INSERT INTO reminders (id, organization_id, title, reminder_type, due_date, target_entity_type, target_entity_id, status)
 VALUES
-    ('60000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'AWS Invoice INV-2026-081 is Overdue (₹49,560)', 'invoice_due', '2026-09-30', 'invoices', '40000000-0000-0000-0000-000000000001', 'active'),
-    ('60000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'Apex Legal Retainer Due Soon (₹29,500)', 'invoice_due', '2026-10-15', 'invoices', '40000000-0000-0000-0000-000000000002', 'active'),
-    ('60000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'Office Lease Renewal Agreement expires in 25 days', 'contract_expiry', '2026-10-26', 'documents', '00000000-0000-0000-0000-000000000001', 'active')
+    ('60000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Tata Communications Invoice INV-2026-081 is Overdue (₹49,560)', 'invoice_due', '2026-09-30', 'invoices', '40000000-0000-0000-0000-000000000001', 'active'),
+    ('60000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'Khaitan & Co Legal Retainer Due Soon (₹29,500)', 'invoice_due', '2026-10-15', 'invoices', '40000000-0000-0000-0000-000000000002', 'active'),
+    ('60000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'Cyber Towers Hitec City Lease Agreement expires in 25 days', 'contract_expiry', '2026-10-26', 'documents', '00000000-0000-0000-0000-000000000001', 'active')
 ON CONFLICT (id) DO NOTHING;

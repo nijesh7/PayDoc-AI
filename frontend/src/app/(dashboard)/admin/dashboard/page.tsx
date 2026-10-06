@@ -40,6 +40,7 @@ const COLORS = ['#4f46e5', '#06b6d4', '#10b981', '#f59e0b', '#8b5cf6'];
 
 export default function AdminDashboardPage() {
   const [data, setData] = useState<any>(null);
+  const [pendingUsers, setPendingUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
@@ -47,8 +48,13 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function loadDashboard() {
       try {
-        const res = await fetchApi('/dashboard');
-        setData(res);
+        const [dashRes, usersRes] = await Promise.all([
+          fetchApi('/dashboard'),
+          fetchApi('/users').catch(() => ({ users: [] })),
+        ]);
+        setData(dashRes);
+        const pend = (usersRes?.users || []).filter((u: any) => u.status === 'pending' || u.is_active === false);
+        setPendingUsers(pend);
       } catch (err) {
         console.error('Failed to load admin dashboard:', err);
       } finally {
@@ -101,7 +107,7 @@ export default function AdminDashboardPage() {
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Acme Technologies Pvt Ltd • Organization Overview, User Controls & Financial Health
+              Cognivex Technologies Pvt Ltd • Organization Overview, User Controls & Financial Health
             </p>
           </div>
         </div>
@@ -123,6 +129,36 @@ export default function AdminDashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* Pending User Access Requests Alert Banner */}
+      {pendingUsers.length > 0 && (
+        <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-amber-50/50 dark:from-indigo-950/60 dark:via-purple-950/40 dark:to-slate-900 border border-indigo-300 dark:border-indigo-700/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md animate-fadeIn">
+          <div className="flex items-center space-x-3.5">
+            <div className="p-2.5 bg-indigo-600/15 dark:bg-indigo-600/30 rounded-xl text-indigo-700 dark:text-indigo-300 shrink-0">
+              <UserCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  {pendingUsers.length} Pending User Access Request{pendingUsers.length > 1 ? 's' : ''}
+                </h3>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                  APPROVAL NEEDED
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                {pendingUsers.map((u: any) => `${u.full_name} (${u.role})`).join(', ')} registered with your organization code and are awaiting Admin approval.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/admin/users"
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md shadow-indigo-600/20 transition-all shrink-0 text-center hover:scale-105"
+          >
+            Review & Approve Users
+          </Link>
+        </div>
+      )}
 
       {/* Action Required Alert Banner */}
       {(metrics.overduePayments > 0 || metrics.overdueInvoices > 0) && (

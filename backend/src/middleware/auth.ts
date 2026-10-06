@@ -43,7 +43,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
       req.organizationId = orgHeader || DEFAULT_ORG_ID;
       req.user = {
         id: '00000000-0000-0000-0000-000000000001',
-        email: 'admin@acmetech.com',
+        email: 'admin@cognivex.com',
         full_name: 'Admin User',
         organization_id: req.organizationId,
         role: roleHeader ? normalizeRole(roleHeader) : 'ADMIN',

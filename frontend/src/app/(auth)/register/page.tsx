@@ -20,6 +20,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { UserRole, ROLE_DEFINITIONS } from '@/types/auth';
 import { RoleSelector } from '@/components/auth/RoleSelector';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
+import { PayDocLogo } from '@/components/common/PayDocLogo';
 
 export default function RegisterPage() {
   const [selectedRole, setSelectedRole] = useState<UserRole | null>('ADMIN');
@@ -27,8 +28,8 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [organizationName, setOrganizationName] = useState('Acme Technologies Pvt Ltd');
-  const [organizationCode, setOrganizationCode] = useState('ACME-2026');
+  const [organizationName, setOrganizationName] = useState('Cognivex Technologies Pvt Ltd');
+  const [organizationCode, setOrganizationCode] = useState('COGNIVEX-2026');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -157,15 +158,10 @@ export default function RegisterPage() {
 
       <div className="w-full max-w-xl relative z-10">
         {/* Header Branding */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 shadow-xl shadow-indigo-500/25 mb-3">
-            <Sparkles className="w-6 h-6 text-white" />
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
-            PAYDOC <span className="text-indigo-600 dark:text-indigo-400">AI</span>
-          </h1>
+        <div className="text-center mb-6 flex flex-col items-center">
+          <PayDocLogo size="lg" showText={true} className="mb-2" />
           <p className="text-xs sm:text-sm text-slate-500 dark:text-gray-400 mt-1">
-            Create your multi-tenant account
+            Create your Cognivex multi-tenant workspace account
           </p>
         </div>
 
@@ -251,7 +247,7 @@ export default function RegisterPage() {
                         required
                         value={organizationName}
                         onChange={(e) => setOrganizationName(e.target.value)}
-                        placeholder="e.g. Acme Technologies Pvt Ltd"
+                        placeholder="e.g. Cognivex Technologies Pvt Ltd"
                         className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-gray-950/60 border border-slate-200 dark:border-gray-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                       />
                     </div>
@@ -270,7 +266,7 @@ export default function RegisterPage() {
                         required
                         value={organizationCode}
                         onChange={(e) => setOrganizationCode(e.target.value)}
-                        placeholder="e.g. ACME-2026"
+                        placeholder="e.g. COGNIVEX-2026"
                         className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-gray-950/60 border border-slate-200 dark:border-gray-800 rounded-xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                       />
                     </div>

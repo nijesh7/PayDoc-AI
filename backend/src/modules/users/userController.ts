@@ -140,7 +140,7 @@ export class UserController {
       }
 
       const normalizedRole = normalizeRole(role);
-      let targetOrgId = '00000000-0000-0000-0000-000000000001'; // Default Acme Tech
+      let targetOrgId = '00000000-0000-0000-0000-000000000001'; // Default Cognivex
       let initialStatus = 'active';
 
       if (normalizedRole === 'ADMIN' && targetOrgName) {
@@ -174,16 +174,15 @@ export class UserController {
 
         if (existingOrg) {
           targetOrgId = existingOrg.id;
-          initialStatus = 'active';
+          // Every user requesting to join an existing organization requires Admin approval
+          initialStatus = 'pending';
         } else {
           // If code not recognized, place in default org with pending status for security
           initialStatus = 'pending';
         }
       } else {
-        // Non-admin without code defaults to pending for review
-        if (normalizedRole !== 'ADMIN') {
-          initialStatus = 'pending';
-        }
+        // Any user registering without creating a brand new organization requires Admin approval
+        initialStatus = 'pending';
       }
 
       // Upsert into users table
@@ -195,6 +194,7 @@ export class UserController {
           email: targetEmail,
           full_name: targetFullName,
           role: normalizedRole.toLowerCase(),
+          status: initialStatus,
           is_active: initialStatus === 'active',
           updated_at: new Date().toISOString(),
         })
@@ -210,11 +210,24 @@ export class UserController {
       await supabaseAdmin.from('audit_logs').insert({
         organization_id: targetOrgId,
         user_id: targetUserId,
-        action: 'USER_REGISTERED',
+        action: initialStatus === 'pending' ? 'ACCESS_REQUEST_SUBMITTED' : 'USER_REGISTERED',
         entity_type: 'users',
         entity_id: targetUserId,
         new_state: { email: targetEmail, full_name: targetFullName, role: normalizedRole, status: initialStatus },
       });
+
+      // Create Admin Reminder / Notification if user is pending approval
+      if (initialStatus === 'pending') {
+        await supabaseAdmin.from('reminders').insert({
+          organization_id: targetOrgId,
+          title: `Access Request: ${targetFullName} requested to join as ${normalizedRole}`,
+          reminder_type: 'access_request',
+          target_entity_type: 'users',
+          target_entity_id: targetUserId,
+          due_date: new Date().toISOString().split('T')[0],
+          status: 'active',
+        });
+      }
 
       return res.status(201).json({
         success: true,
@@ -251,7 +264,7 @@ export class UserController {
       const formatted = (users || []).map((u) => ({
         ...u,
         role: normalizeRole(u.role),
-        status: u.status || (u.is_active === false ? 'disabled' : 'active'),
+        status: (u.status === 'pending' || u.is_active === false) ? 'pending' : (u.status || 'active'),
       }));
 
       return res.json({ users: formatted });
@@ -266,7 +279,7 @@ export class UserController {
   async updateUserRole(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { newRole } = req.body;
+      const newRole = req.body.newRole || req.body.role;
       const orgId = req.organizationId;
       const adminId = req.user?.id;
 
@@ -346,6 +359,7 @@ export class UserController {
       const { data: updatedUser, error } = await supabaseAdmin
         .from('users')
         .update({
+          status,
           is_active: status === 'active',
           updated_at: new Date().toISOString(),
         })
@@ -356,6 +370,15 @@ export class UserController {
 
       if (error) {
         return res.status(500).json({ error: error.message });
+      }
+
+      // If approved or rejected, resolve corresponding reminder
+      if (status === 'active' || status === 'disabled') {
+        await supabaseAdmin
+          .from('reminders')
+          .update({ status: 'resolved' })
+          .eq('target_entity_type', 'users')
+          .eq('target_entity_id', id);
       }
 
       // Audit log

@@ -33,7 +33,7 @@ export async function askBusinessAssistant(req: Request, res: Response) {
     const totalOverdueInvoicesAmount = (overdueInvoices || []).reduce((acc, i) => acc + Number(i.total_amount), 0);
 
     const factualContext = `
-Organization: ${org?.name || 'Acme Technologies Pvt Ltd'} (Currency: ${org?.currency || 'INR'})
+Organization: ${org?.name || 'Cognivex Technologies Pvt Ltd'} (Currency: ${org?.currency || 'INR'})
 Total Employees: ${(employees || []).length} (${activeEmployeesCount} Active)
 
 Latest Payroll Run:

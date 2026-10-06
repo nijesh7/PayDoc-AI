@@ -585,3 +585,154 @@ export async function downloadEPFOECRFile(req: Request, res: Response) {
     res.status(500).json({ error: err.message });
   }
 }
+
+export async function generateEmployeePayslip(req: Request, res: Response) {
+  try {
+    const orgId = req.organizationId;
+    const { employeeId, month, year, overtimeHours = 0, bonusAmount = 0, advancesAmount = 0, lopDays = 0 } = req.body;
+
+    if (!employeeId || !month || !year) {
+      return res.status(400).json({ error: 'employeeId, month, and year are required.' });
+    }
+
+    // 1. Fetch employee details
+    const { data: emp, error: empErr } = await supabaseAdmin
+      .from('employees')
+      .select('*, departments(name)')
+      .eq('id', employeeId)
+      .eq('organization_id', orgId)
+      .single();
+
+    if (empErr || !emp) {
+      return res.status(404).json({ error: 'Employee not found in organization.' });
+    }
+
+    // 2. Fetch or create a payroll run for this month/year
+    let { data: run } = await supabaseAdmin
+      .from('payroll_runs')
+      .select('*')
+      .eq('organization_id', orgId)
+      .eq('month', Number(month))
+      .eq('year', Number(year))
+      .single();
+
+    if (!run) {
+      const { data: newRun, error: newRunErr } = await supabaseAdmin
+        .from('payroll_runs')
+        .insert({
+          organization_id: orgId,
+          month: Number(month),
+          year: Number(year),
+          status: 'draft',
+          total_employees: 1,
+        })
+        .select()
+        .single();
+      if (newRunErr) throw newRunErr;
+      run = newRun;
+    }
+
+    // 3. Compute deterministic salary
+    const baseSalary = Number(emp.base_salary) || 0;
+    const calc = calculateNetSalary({
+      basicSalary: baseSalary,
+      salaryType: 'monthly',
+      daysWorked: Math.max(0, 30 - Number(lopDays)),
+      totalWorkingDays: 30,
+      overtimeHours: Number(overtimeHours),
+      overtimeHourlyRate: baseSalary / (30 * 8),
+      bonus: Number(bonusAmount),
+      advances: Number(advancesAmount),
+      unpaidLeaveDays: Number(lopDays),
+    });
+
+    // Statutory deductions
+    const epfResult = calculateEPF(calc.basicSalary);
+    const pfEmployee = Number(epfResult.employeePF) || 0;
+    const ptAmount = Number(calculateProfessionalTax(calc.grossSalary)) || 0;
+    const netSalary = Math.max(0, calc.netSalary - pfEmployee - ptAmount);
+
+    // 4. Upsert payroll item
+    const { data: existingItem } = await supabaseAdmin
+      .from('payroll_items')
+      .select('id')
+      .eq('payroll_run_id', run.id)
+      .eq('employee_id', emp.id)
+      .single();
+
+    let savedItem;
+    if (existingItem) {
+      const { data: updated, error: updErr } = await supabaseAdmin
+        .from('payroll_items')
+        .update({
+          basic_salary: calc.basicSalary,
+          overtime_hours: calc.overtimeHours,
+          overtime_amount: calc.overtimeAmount,
+          bonus_amount: calc.bonusAmount,
+          allowances_amount: calc.allowancesAmount,
+          deductions_amount: calc.deductionsAmount,
+          advances_amount: calc.advancesAmount,
+          lop_days: Number(lopDays),
+          leave_deductions_amount: calc.leaveDeductionsAmount,
+          pf_employee: pfEmployee,
+          pt_amount: ptAmount,
+          net_salary: netSalary,
+          status: 'approved',
+          breakdown: {
+            ...calc.breakdown,
+            statutory: { pfEmployee, ptAmount },
+          },
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingItem.id)
+        .select()
+        .single();
+      if (updErr) throw updErr;
+      savedItem = updated;
+    } else {
+      const { data: inserted, error: insErr } = await supabaseAdmin
+        .from('payroll_items')
+        .insert({
+          payroll_run_id: run.id,
+          organization_id: orgId,
+          employee_id: emp.id,
+          basic_salary: calc.basicSalary,
+          overtime_hours: calc.overtimeHours,
+          overtime_amount: calc.overtimeAmount,
+          bonus_amount: calc.bonusAmount,
+          allowances_amount: calc.allowancesAmount,
+          deductions_amount: calc.deductionsAmount,
+          advances_amount: calc.advancesAmount,
+          lop_days: Number(lopDays),
+          leave_deductions_amount: calc.leaveDeductionsAmount,
+          pf_employee: pfEmployee,
+          pt_amount: ptAmount,
+          net_salary: netSalary,
+          status: 'approved',
+          breakdown: {
+            ...calc.breakdown,
+            statutory: { pfEmployee, ptAmount },
+          },
+        })
+        .select()
+        .single();
+      if (insErr) throw insErr;
+      savedItem = inserted;
+    }
+
+    res.json({
+      success: true,
+      payrollItemId: savedItem.id,
+      payrollItem: savedItem,
+      employee: emp,
+      month: Number(month),
+      year: Number(year),
+      netSalary,
+      message: `Payslip generated for ${emp.first_name} ${emp.last_name}`,
+    });
+  } catch (err: any) {
+    console.error('generateEmployeePayslip error:', err);
+    res.status(500).json({ error: err.message });
+  }
+}
+

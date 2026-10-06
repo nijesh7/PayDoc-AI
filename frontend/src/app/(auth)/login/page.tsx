@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
@@ -25,12 +25,13 @@ import {
 import { supabase } from '@/lib/supabaseClient';
 import { UserRole, normalizeRole, ROLE_DEFINITIONS } from '@/types/auth';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
+import { PayDocLogo } from '@/components/common/PayDocLogo';
 
 const DEMO_PRESETS: Record<UserRole, { email: string; password: string; name: string; color: string }> = {
-  ADMIN: { email: 'admin@acmetech.com', password: 'password123', name: 'Rajesh Sharma', color: 'from-indigo-500 to-violet-600' },
-  HR: { email: 'ananya.d@acmetech.com', password: 'password123', name: 'Ananya Deshmukh', color: 'from-blue-500 to-cyan-600' },
-  ACCOUNTANT: { email: 'vikram.mehta@acmetech.com', password: 'password123', name: 'Vikram Mehta', color: 'from-emerald-500 to-teal-600' },
-  EMPLOYEE: { email: 'aarav.sharma@acmetech.com', password: 'password123', name: 'Aarav Sharma', color: 'from-purple-500 to-pink-600' },
+  ADMIN: { email: 'admin@cognivex.com', password: 'password123', name: 'Rajesh Sharma', color: 'from-indigo-500 to-violet-600' },
+  HR: { email: 'ananya.d@cognivex.com', password: 'password123', name: 'Ananya Deshmukh', color: 'from-blue-500 to-cyan-600' },
+  ACCOUNTANT: { email: 'vikram.mehta@cognivex.com', password: 'password123', name: 'Vikram Mehta', color: 'from-emerald-500 to-teal-600' },
+  EMPLOYEE: { email: 'aarav.sharma@cognivex.com', password: 'password123', name: 'Aarav Sharma', color: 'from-purple-500 to-pink-600' },
 };
 
 const ROLE_CONFIG: Record<UserRole, { icon: React.ReactNode; accent: string; bg: string; border: string; ring: string; label: string; desc: string }> = {
@@ -49,7 +50,7 @@ const HERO_FEATURES = [
 
 export default function LoginPage() {
   const [selectedRole, setSelectedRole] = useState<UserRole>('ADMIN');
-  const [email, setEmail] = useState('admin@acmetech.com');
+  const [email, setEmail] = useState('admin@cognivex.com');
   const [password, setPassword] = useState('password123');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -139,11 +140,8 @@ export default function LoginPage() {
 
         <div className="relative z-10 px-10 pt-10">
           {/* Logo */}
-          <div className="flex items-center gap-3 mb-14">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-600/40">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold tracking-tight text-white">PAYDOC <span className="text-indigo-400">AI</span></span>
+          <div className="mb-12">
+            <PayDocLogo size="lg" showText={true} />
           </div>
 
           {/* Headline */}
@@ -195,11 +193,8 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col items-center justify-center px-5 sm:px-10 py-12 overflow-y-auto">
 
         {/* Mobile logo */}
-        <div className="lg:hidden flex items-center gap-2 mb-8">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
-            <Sparkles className="w-4 h-4 text-white" />
-          </div>
-          <span className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">PAYDOC <span className="text-indigo-600 dark:text-indigo-400">AI</span></span>
+        <div className="lg:hidden flex items-center justify-center mb-8">
+          <PayDocLogo size="md" showText={true} />
         </div>
 
         <div className="w-full max-w-md">

@@ -50,7 +50,7 @@ export const ROLE_DEFINITIONS: Record<UserRole, RoleDefinition> = {
     description: 'View personal salary, download payslips, track payments, and access personal documents.',
     iconName: 'User',
     defaultRoute: '/employee/dashboard',
-    allowedPrefixes: ['/employee', '/dashboard', '/profile'],
+    allowedPrefixes: ['/employee/', '/employee', '/dashboard', '/profile'],
   },
 };
 

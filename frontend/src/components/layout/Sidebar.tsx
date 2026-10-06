@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { UserRole, normalizeRole, ROLE_DEFINITIONS } from '@/types/auth';
+import { PayDocLogo } from '@/components/common/PayDocLogo';
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -36,7 +37,7 @@ export function Sidebar() {
     ? 'HR'
     : pathname?.startsWith('/accountant')
     ? 'ACCOUNTANT'
-    : pathname?.startsWith('/employee')
+    : (pathname === '/employee' || pathname?.startsWith('/employee/'))
     ? 'EMPLOYEE'
     : 'ADMIN';
 
@@ -59,7 +60,7 @@ export function Sidebar() {
     } else if (pathname?.startsWith('/accountant')) {
       active = 'ACCOUNTANT';
       localStorage.setItem('paydoc_active_role', 'ACCOUNTANT');
-    } else if (pathname?.startsWith('/employee')) {
+    } else if (pathname === '/employee' || pathname?.startsWith('/employee/')) {
       active = 'EMPLOYEE';
       localStorage.setItem('paydoc_active_role', 'EMPLOYEE');
     } else if (saved) {
@@ -160,14 +161,12 @@ export function Sidebar() {
   return (
     <aside className="w-64 bg-white dark:bg-[#0D121F] border-r border-slate-200 dark:border-slate-800/90 flex flex-col h-screen sticky top-0 transition-colors duration-200 select-none z-20">
       {/* Brand Header */}
-      <div className="h-16 flex items-center justify-between px-5 border-b border-slate-200 dark:border-slate-800/90">
-        <Link href={ROLE_DEFINITIONS[currentRole].defaultRoute} className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-600/25 group-hover:scale-105 transition-transform">
-            <Sparkles className="w-4 h-4" />
-          </div>
+      <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-800/90">
+        <Link href={ROLE_DEFINITIONS[currentRole].defaultRoute} className="flex items-center gap-2 group">
+          <PayDocLogo size="sm" showText={false} />
           <div>
-            <span className="font-bold text-base tracking-tight text-slate-900 dark:text-white">PAYDOC</span>
-            <span className="font-bold text-base tracking-tight text-indigo-600 dark:text-indigo-400"> AI</span>
+            <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white">PAYDOC</span>
+            <span className="font-extrabold text-sm tracking-tight text-indigo-600 dark:text-indigo-400"> AI</span>
           </div>
         </Link>
 
@@ -222,7 +221,7 @@ export function Sidebar() {
             </div>
             <div className="overflow-hidden" suppressHydrationWarning>
               <p className="text-xs font-semibold text-slate-900 dark:text-white truncate" suppressHydrationWarning>{userName}</p>
-              <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium truncate" suppressHydrationWarning>{currentRole} • Acme Tech</p>
+              <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-medium truncate" suppressHydrationWarning>{currentRole} • Cognivex</p>
             </div>
           </div>
           <button

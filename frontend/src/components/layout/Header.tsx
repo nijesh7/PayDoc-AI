@@ -3,11 +3,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Search, Bell, Sparkles, User, LogOut, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Search, Bell, Sparkles, User, LogOut, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 import { GlobalSearchModal } from './GlobalSearchModal';
 import { ThemeToggle } from '@/components/common/ThemeToggle';
 import { supabase } from '@/lib/supabaseClient';
-import { UserRole, normalizeRole } from '@/types/auth';
+import { fetchApi } from '@/lib/apiClient';
+import { UserRole, normalizeRole, ROLE_DEFINITIONS } from '@/types/auth';
 
 export function Header() {
   const pathname = usePathname();
@@ -22,12 +23,13 @@ export function Header() {
     ? 'HR'
     : pathname?.startsWith('/accountant')
     ? 'ACCOUNTANT'
-    : pathname?.startsWith('/employee')
+    : (pathname === '/employee' || pathname?.startsWith('/employee/'))
     ? 'EMPLOYEE'
     : 'ADMIN';
 
   const [currentRole, setCurrentRole] = useState<UserRole>(roleFromPath);
   const [userName, setUserName] = useState<string>('');
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const notificationRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,6 +42,19 @@ export function Header() {
       setCurrentRole(roleFromPath);
     }
     if (name) setUserName(name);
+
+    async function loadAlerts() {
+      try {
+        const usersRes = await fetchApi('/users').catch(() => null);
+        if (usersRes?.users) {
+          const pend = usersRes.users.filter((u: any) => u.status === 'pending' || u.is_active === false);
+          setPendingRequests(pend);
+        }
+      } catch (err) {
+        // ignore
+      }
+    }
+    loadAlerts();
 
     // Keyboard shortcut for Command+K or Ctrl+K
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -65,6 +80,20 @@ export function Header() {
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [showNotifications]);
+
+  const handleSwitchRole = (newRole: UserRole) => {
+    localStorage.setItem('paydoc_active_role', newRole);
+    setCurrentRole(newRole);
+    const names: Record<UserRole, string> = {
+      ADMIN: 'Rajesh Sharma',
+      HR: 'Ananya Deshmukh',
+      ACCOUNTANT: 'Vikram Mehta',
+      EMPLOYEE: 'Aarav Sharma',
+    };
+    localStorage.setItem('paydoc_user_name', names[newRole]);
+    setUserName(names[newRole]);
+    window.location.href = ROLE_DEFINITIONS[newRole].defaultRoute;
+  };
 
   return (
     <>
@@ -103,7 +132,13 @@ export function Header() {
               title="Notifications"
             >
               <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
+              {pendingRequests.length > 0 ? (
+                <span className="absolute top-1 right-1 px-1 min-w-[16px] h-4 text-[9px] font-bold rounded-full bg-amber-500 text-white flex items-center justify-center ring-2 ring-white dark:ring-slate-900 animate-pulse">
+                  {pendingRequests.length}
+                </span>
+              ) : (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
+              )}
             </button>
 
             {/* Notification Dropdown Flyout */}
@@ -113,7 +148,7 @@ export function Header() {
                   <div className="flex items-center gap-1.5">
                     <h4 className="font-semibold text-xs text-slate-900 dark:text-slate-100">Live Alerts</h4>
                     <span className="text-[10px] bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 font-bold px-1.5 py-0.2 rounded-full">
-                      2 new
+                      {2 + pendingRequests.length} new
                     </span>
                   </div>
                   <Link
@@ -126,10 +161,28 @@ export function Header() {
                 </div>
 
                 <div className="py-2.5 space-y-2 max-h-72 overflow-y-auto text-xs">
+                  {pendingRequests.map((req) => (
+                    <Link
+                      key={req.id}
+                      href="/admin/users"
+                      onClick={() => setShowNotifications(false)}
+                      className="p-2.5 rounded-xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex gap-2.5 hover:bg-amber-100/70 transition-colors cursor-pointer"
+                    >
+                      <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-bold text-slate-900 dark:text-slate-100 text-[11px]">Access Request: {req.full_name}</p>
+                          <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-amber-200 text-amber-800 dark:bg-amber-900 dark:text-amber-200 uppercase">{req.role}</span>
+                        </div>
+                        <p className="text-slate-600 dark:text-slate-300 text-[10px] mt-0.5">Click to approve or reject in User Controls.</p>
+                      </div>
+                    </Link>
+                  ))}
+
                   <div className="p-2.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/50 flex gap-2.5">
                     <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-semibold text-slate-900 dark:text-slate-100 text-[11px]">AWS Invoice INV-2026-081 Overdue</p>
+                      <p className="font-semibold text-slate-900 dark:text-slate-100 text-[11px]">Tata Communications Invoice INV-2026-081 Overdue</p>
                       <p className="text-slate-500 dark:text-slate-400 text-[10px] mt-0.5">Amount ₹49,560 was due on 30 Sep 2026.</p>
                     </div>
                   </div>
@@ -152,9 +205,20 @@ export function Header() {
               <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate max-w-[120px]" suppressHydrationWarning>
                 {userName || (currentRole === 'ADMIN' ? 'Rajesh Sharma' : currentRole === 'HR' ? 'Ananya D.' : currentRole === 'ACCOUNTANT' ? 'Vikram Mehta' : 'Aarav Sharma')}
               </span>
-              <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400" suppressHydrationWarning>
-                {currentRole}
-              </span>
+              <div className="flex items-center gap-1">
+                <select
+                  value={currentRole}
+                  onChange={(e) => handleSwitchRole(e.target.value as UserRole)}
+                  className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-transparent border-0 cursor-pointer hover:underline text-right outline-hidden"
+                  title="Switch Role"
+                  suppressHydrationWarning
+                >
+                  <option value="ADMIN" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">ADMIN</option>
+                  <option value="HR" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">HR</option>
+                  <option value="ACCOUNTANT" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">ACCOUNTANT</option>
+                  <option value="EMPLOYEE" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">EMPLOYEE</option>
+                </select>
+              </div>
             </div>
             <div
               className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white font-bold flex items-center justify-center text-xs shadow-2xs cursor-default"

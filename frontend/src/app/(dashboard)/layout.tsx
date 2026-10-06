@@ -29,7 +29,7 @@ export default function DashboardLayout({
     } else if (pathname?.startsWith('/accountant')) {
       activeRole = 'ACCOUNTANT';
       localStorage.setItem('paydoc_active_role', 'ACCOUNTANT');
-    } else if (pathname?.startsWith('/employee')) {
+    } else if (pathname === '/employee' || pathname?.startsWith('/employee/')) {
       activeRole = 'EMPLOYEE';
       localStorage.setItem('paydoc_active_role', 'EMPLOYEE');
     }

@@ -57,12 +57,14 @@ apiRouter.get('/payroll/runs/:id', payrollCtrl.getPayrollRun);
 apiRouter.post('/payroll/runs', requireRole(['ADMIN', 'HR']), payrollCtrl.createPayrollRun);
 apiRouter.put('/payroll/items/:id', requireRole(['ADMIN', 'HR']), payrollCtrl.updatePayrollItem);
 apiRouter.post('/payroll/runs/:id/approve', requireRole(['ADMIN']), payrollCtrl.approvePayrollRun);
+apiRouter.post('/payroll/generate-employee-payslip', requireRole(['ADMIN', 'HR']), payrollCtrl.generateEmployeePayslip);
 apiRouter.get('/payslips/:itemId/pdf', payrollCtrl.downloadPayslipPDF);
 apiRouter.get('/payroll/runs/:id/ecr', payrollCtrl.downloadEPFOECRFile);
 
 // --- 4. Payments ---
 apiRouter.get('/payments', paymentCtrl.listPayments);
 apiRouter.get('/payments/summary', paymentCtrl.getPaymentSummary);
+apiRouter.post('/payments', requireRole(['ADMIN', 'ACCOUNTANT']), paymentCtrl.createPayment);
 apiRouter.post('/payments/:id/pay', requireRole(['ADMIN', 'ACCOUNTANT']), paymentCtrl.recordPayment);
 
 // --- 5. Documents & AI Extraction ---
