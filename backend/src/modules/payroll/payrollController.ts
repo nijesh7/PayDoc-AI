@@ -396,12 +396,23 @@ export async function approvePayrollRun(req: Request, res: Response) {
     const { id } = req.params;
     const orgId = req.organizationId;
 
+    // Check approver user ID validity for foreign key
+    let approverId = req.user?.id || null;
+    if (approverId) {
+      const { data: userExists } = await supabaseAdmin
+        .from('users')
+        .select('id')
+        .eq('id', approverId)
+        .maybeSingle();
+      if (!userExists) approverId = null;
+    }
+
     // 1. Lock and approve payroll run
     const { data: run, error: runError } = await supabaseAdmin
       .from('payroll_runs')
       .update({
         status: 'approved',
-        approved_by: req.user?.id,
+        approved_by: approverId,
         approved_at: new Date().toISOString(),
       })
       .eq('id', id)
@@ -417,39 +428,67 @@ export async function approvePayrollRun(req: Request, res: Response) {
       .update({ status: 'approved' })
       .eq('payroll_run_id', id);
 
-    // 3. Create corresponding pending payments
+    // 3. Create corresponding pending payments safely
     const { data: items } = await supabaseAdmin
       .from('payroll_items')
       .select('*, employees(first_name, last_name)')
       .eq('payroll_run_id', id);
 
-    const paymentRecords = (items || []).map((item) => ({
-      organization_id: orgId,
-      payment_type: 'salary',
-      payroll_item_id: item.id,
-      employee_id: item.employee_id,
-      vendor_name: `${item.employees.first_name} ${item.employees.last_name}`,
-      amount: item.net_salary,
-      due_date: new Date(run.year, run.month, 0).toISOString().split('T')[0], // Month end
-      status: 'pending',
-      payment_method: 'bank_transfer',
-      notes: `Salary payout for ${run.month}/${run.year}`,
-    }));
+    const paymentRecords = (items || []).map((item: any) => {
+      let empName = 'Staff Member';
+      if (item.employees) {
+        if (Array.isArray(item.employees) && item.employees.length > 0) {
+          empName = `${item.employees[0].first_name || ''} ${item.employees[0].last_name || ''}`.trim() || 'Staff Member';
+        } else if (typeof item.employees === 'object') {
+          empName = `${item.employees.first_name || ''} ${item.employees.last_name || ''}`.trim() || 'Staff Member';
+        }
+      }
+      return {
+        organization_id: orgId,
+        payment_type: 'salary',
+        payroll_item_id: item.id,
+        employee_id: item.employee_id,
+        vendor_name: empName,
+        amount: item.net_salary,
+        due_date: new Date(run.year, run.month, 0).toISOString().split('T')[0],
+        status: 'pending',
+        payment_method: 'bank_transfer',
+        notes: `Salary payout for ${run.month}/${run.year}`,
+      };
+    });
 
     if (paymentRecords.length > 0) {
-      await supabaseAdmin.from('payments').insert(paymentRecords);
+      const { data: existingPayments } = await supabaseAdmin
+        .from('payments')
+        .select('payroll_item_id')
+        .eq('organization_id', orgId)
+        .in('payroll_item_id', (items || []).map((it: any) => it.id));
+      const existingIds = new Set((existingPayments || []).map((p: any) => p.payroll_item_id));
+      const newPayments = paymentRecords.filter((p: any) => !existingIds.has(p.payroll_item_id));
+      if (newPayments.length > 0) {
+        await supabaseAdmin.from('payments').insert(newPayments);
+      }
     }
 
-    // 4. Create in-app notification
-    await supabaseAdmin.from('notifications').insert({
-      organization_id: orgId,
-      user_id: req.user?.id,
-      title: `Payroll Approved for ${run.month}/${run.year}`,
-      message: `Total Net Salary of ₹${Number(run.total_net_salary).toLocaleString('en-IN')} approved for ${run.total_employees} employees.`,
-      notification_type: 'payroll_approved',
-      entity_type: 'payroll_runs',
-      entity_id: run.id,
-    });
+    // 4. Synchronize generic approvals table if an entry exists
+    await supabaseAdmin
+      .from('approvals')
+      .update({ status: 'approved', updated_at: new Date().toISOString() })
+      .eq('entity_type', 'payroll_run')
+      .eq('entity_id', id);
+
+    // 5. Create in-app notification
+    if (approverId) {
+      await supabaseAdmin.from('notifications').insert({
+        organization_id: orgId,
+        user_id: approverId,
+        title: `Payroll Approved for ${run.month}/${run.year}`,
+        message: `Total Net Salary of ₹${Number(run.total_net_salary).toLocaleString('en-IN')} approved for ${run.total_employees} employees.`,
+        notification_type: 'payroll_approved',
+        entity_type: 'payroll_runs',
+        entity_id: run.id,
+      });
+    }
 
     res.json({ payrollRun: run, message: 'Payroll run approved successfully' });
   } catch (err: any) {

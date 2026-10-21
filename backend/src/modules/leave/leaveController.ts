@@ -14,7 +14,8 @@ const createLeaveRequestSchema = z.object({
 });
 
 const actionLeaveRequestSchema = z.object({
-  action: z.enum(['approve', 'reject']),
+  action: z.enum(['approve', 'reject', 'approved', 'rejected']).optional(),
+  status: z.enum(['approve', 'reject', 'approved', 'rejected']).optional(),
   review_comment: z.string().optional(),
 });
 
@@ -244,7 +245,9 @@ export async function actionLeaveRequest(req: Request, res: Response) {
       return res.status(400).json({ error: `Cannot action request already in '${leaveReq.status}' status` });
     }
 
-    const newStatus = parsed.action === 'approve' ? 'approved' : 'rejected';
+    const rawAction = parsed.action || parsed.status || 'approve';
+    const isApprove = rawAction === 'approve' || rawAction === 'approved';
+    const newStatus = isApprove ? 'approved' : 'rejected';
     const now = new Date().toISOString();
 
     // Update request

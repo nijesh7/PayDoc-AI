@@ -159,7 +159,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-xl relative z-10">
         {/* Header Branding */}
         <div className="text-center mb-6 flex flex-col items-center">
-          <PayDocLogo size="lg" showText={true} className="mb-2" />
+          <PayDocLogo size="lg" showText={true} showBadge={true} className="mb-2" />
           <p className="text-xs sm:text-sm text-slate-500 dark:text-gray-400 mt-1">
             Create your Cognivex multi-tenant workspace account
           </p>

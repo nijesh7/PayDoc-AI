@@ -179,9 +179,9 @@ export class ApprovalService {
       throw new Error(`This request has already been ${approval.status}.`);
     }
 
-    // 2. Strict Maker-Checker Rule: Creator cannot approve their own submission
+    // 2. Strict Maker-Checker Rule: Creator cannot approve their own submission (Admin override allowed for sole-owner MSME setup)
     const makerCheckerEnforced = approval.workflow?.maker_checker_enforced ?? true;
-    if (makerCheckerEnforced && approval.created_by && approval.created_by === actorId) {
+    if (makerCheckerEnforced && approval.created_by && approval.created_by === actorId && actorRole !== 'admin') {
       throw new Error('Maker-Checker Violation: You cannot approve or sign off on your own submission.');
     }
 

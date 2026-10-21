@@ -39,6 +39,7 @@ apiRouter.put('/users/profile', (req, res) => userController.updateProfile(req, 
 apiRouter.get('/users', requireRole(['ADMIN']), (req, res) => userController.getUsers(req, res));
 apiRouter.patch('/users/:id/role', requireRole(['ADMIN']), (req, res) => userController.updateUserRole(req, res));
 apiRouter.patch('/users/:id/status', requireRole(['ADMIN']), (req, res) => userController.updateUserStatus(req, res));
+apiRouter.post('/users/:id/status', requireRole(['ADMIN']), (req, res) => userController.updateUserStatus(req, res));
 
 // --- 1. Dashboard & Analytics ---
 apiRouter.get('/dashboard', analyticsCtrl.getDashboardOverview);
@@ -56,7 +57,7 @@ apiRouter.get('/payroll/runs', payrollCtrl.listPayrollRuns);
 apiRouter.get('/payroll/runs/:id', payrollCtrl.getPayrollRun);
 apiRouter.post('/payroll/runs', requireRole(['ADMIN', 'HR']), payrollCtrl.createPayrollRun);
 apiRouter.put('/payroll/items/:id', requireRole(['ADMIN', 'HR']), payrollCtrl.updatePayrollItem);
-apiRouter.post('/payroll/runs/:id/approve', requireRole(['ADMIN']), payrollCtrl.approvePayrollRun);
+apiRouter.post('/payroll/runs/:id/approve', requireRole(['ADMIN', 'HR']), payrollCtrl.approvePayrollRun);
 apiRouter.post('/payroll/generate-employee-payslip', requireRole(['ADMIN', 'HR']), payrollCtrl.generateEmployeePayslip);
 apiRouter.get('/payslips/:itemId/pdf', payrollCtrl.downloadPayslipPDF);
 apiRouter.get('/payroll/runs/:id/ecr', payrollCtrl.downloadEPFOECRFile);
@@ -78,6 +79,8 @@ apiRouter.delete('/documents/:id', documentCtrl.deleteDocument);
 apiRouter.get('/invoices', invoiceCtrl.listInvoices);
 apiRouter.get('/invoices/:id', invoiceCtrl.getInvoice);
 apiRouter.post('/invoices', requireRole(['ADMIN', 'ACCOUNTANT']), invoiceCtrl.createInvoice);
+apiRouter.patch('/invoices/:id/status', requireRole(['ADMIN', 'ACCOUNTANT']), invoiceCtrl.updateInvoiceStatus);
+apiRouter.post('/invoices/:id/status', requireRole(['ADMIN', 'ACCOUNTANT']), invoiceCtrl.updateInvoiceStatus);
 
 // --- 7. AI Business Assistant ---
 apiRouter.post('/assistant/query', assistantCtrl.askBusinessAssistant);
@@ -124,6 +127,7 @@ apiRouter.get('/leave-balances/:employeeId', leaveCtrl.getEmployeeLeaveBalances)
 apiRouter.get('/leave-requests', leaveCtrl.getLeaveRequests);
 apiRouter.post('/leave-requests', leaveCtrl.createLeaveRequest);
 apiRouter.patch('/leave-requests/:id/action', requireRole(['ADMIN', 'HR']), leaveCtrl.actionLeaveRequest);
+apiRouter.post('/leave-requests/:id/action', requireRole(['ADMIN', 'HR']), leaveCtrl.actionLeaveRequest);
 apiRouter.get('/holidays', leaveCtrl.getHolidays);
 
 apiRouter.get('/attendance', attendanceCtrl.getAttendance);

@@ -95,7 +95,7 @@ export default function ApprovalsHubPage() {
     try {
       const newStatus = action === 'approve' ? 'active' : 'disabled';
       await fetchApi(`/users/${userId}/status`, {
-        method: 'POST',
+        method: 'PATCH',
         body: JSON.stringify({ status: newStatus }),
       });
       setFeedbackMessage({
@@ -134,9 +134,10 @@ export default function ApprovalsHubPage() {
   const handleLeaveAction = async (leaveId: string, action: 'approved' | 'rejected') => {
     setActionInProgress(leaveId);
     try {
+      const actionType = action === 'approved' ? 'approve' : 'reject';
       await fetchApi(`/leave-requests/${leaveId}/action`, {
         method: 'PATCH',
-        body: JSON.stringify({ status: action }),
+        body: JSON.stringify({ action: actionType, status: action }),
       });
       setFeedbackMessage({
         type: 'success',
@@ -146,6 +147,27 @@ export default function ApprovalsHubPage() {
       setTimeout(() => setFeedbackMessage(null), 4000);
     } catch (err: any) {
       setFeedbackMessage({ type: 'error', text: err.message || `Failed to update leave request.` });
+    } finally {
+      setActionInProgress(null);
+    }
+  };
+
+  // Handle Invoice Approve / Settle
+  const handleInvoiceApprove = async (invoiceId: string) => {
+    setActionInProgress(invoiceId);
+    try {
+      await fetchApi(`/invoices/${invoiceId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'paid' }),
+      });
+      setFeedbackMessage({
+        type: 'success',
+        text: 'Invoice approved and marked as settled.',
+      });
+      setPendingInvoices((prev) => prev.filter((i) => i.id !== invoiceId));
+      setTimeout(() => setFeedbackMessage(null), 4000);
+    } catch (err: any) {
+      setFeedbackMessage({ type: 'error', text: err.message || 'Failed to approve invoice.' });
     } finally {
       setActionInProgress(null);
     }
@@ -371,6 +393,21 @@ export default function ApprovalsHubPage() {
           <span>Invoices</span>
           <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
             {pendingInvoices.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`px-4 py-2.5 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'history'
+              ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
+              : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+          }`}
+        >
+          <Clock className="w-3.5 h-3.5" />
+          <span>Approval History</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+            {historyItems.length}
           </span>
         </button>
       </div>
@@ -614,14 +651,71 @@ export default function ApprovalsHubPage() {
                     <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
                       <Link
                         href={`/invoices`}
-                        className="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs"
+                        className="px-3.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold shadow-xs"
                       >
                         Review Invoice
                       </Link>
+                      <button
+                        onClick={() => handleInvoiceApprove(inv.id)}
+                        disabled={actionInProgress === inv.id}
+                        className="flex items-center gap-1 px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Approve & Settle</span>
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Section 5: Approval History */}
+          {(activeTab === 'history') && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <span>Audit Trail & Historical Approvals ({historyItems.length})</span>
+                </h3>
+              </div>
+
+              {historyItems.length === 0 ? (
+                <div className="p-8 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
+                  No historical approval records recorded yet.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3">
+                  {historyItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-bold text-sm text-slate-900 dark:text-white capitalize">
+                            {item.entity_type?.replace('_', ' ')} Approval
+                          </h4>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                              item.status === 'approved'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
+                                : item.status === 'rejected'
+                                ? 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800'
+                                : 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800'
+                            }`}
+                          >
+                            {item.status}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          Initiated by: {item.creator?.full_name || 'System / Admin'} ({item.creator?.email || 'N/A'}) • {formatDate(item.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
